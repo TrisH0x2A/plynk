@@ -51,6 +51,11 @@ pub fn run() {
             commands::backup::export_database,
             commands::backup::restore_database,
             commands::backup::open_external_url,
+            commands::recycle_bin::get_recycle_bin,
+            commands::recycle_bin::restore_bin_item,
+            commands::recycle_bin::restore_all_bin_items,
+            commands::recycle_bin::delete_bin_item_permanently,
+            commands::recycle_bin::clear_recycle_bin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

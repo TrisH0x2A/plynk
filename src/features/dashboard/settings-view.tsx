@@ -79,7 +79,7 @@ export const SettingsView = ({
         </div>
 
         <p className="font-sans text-xs text-zinc-600 dark:text-[#c4c7c8]">
-          Permanently delete workspace <strong className="text-zinc-900 dark:text-white uppercase font-mono">{workspace.name}</strong> and all associated boards, lists, cards, and activity logs.
+          Move workspace <strong className="text-zinc-900 dark:text-white uppercase font-mono">{workspace.name}</strong> to the Recycle Bin. All boards, lists, and cards will be preserved and recoverable.
         </p>
 
         <button

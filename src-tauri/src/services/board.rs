@@ -107,20 +107,6 @@ pub fn update_board(conn: &Connection, id: &str, title: String, user_name: Optio
 }
 
 pub fn delete_board(conn: &Connection, id: &str, user_name: Option<String>) -> AppResult<()> {
-    let existing = get_board(conn, id)?;
-
-    conn.execute("DELETE FROM boards WHERE id = ?1", params![id])?;
-
     let actor = user_name.as_deref().unwrap_or("SYS_ADMIN");
-    create_audit_log_with_user(
-        conn,
-        &existing.workspace_id,
-        "DELETE",
-        id,
-        "BOARD",
-        &existing.title,
-        actor,
-    )?;
-
-    Ok(())
+    crate::services::recycle_bin::soft_delete_board(conn, id, actor)
 }

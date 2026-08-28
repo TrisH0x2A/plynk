@@ -100,6 +100,22 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         CREATE INDEX IF NOT EXISTS idx_cards_list ON cards(list_id);
         CREATE INDEX IF NOT EXISTS idx_audit_workspace ON audit_logs(workspace_id);
         CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_id);
+
+        CREATE TABLE IF NOT EXISTS recycle_bin (
+            id TEXT PRIMARY KEY,
+            item_type TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            parent_workspace_id TEXT,
+            parent_board_id TEXT,
+            parent_list_id TEXT,
+            payload TEXT NOT NULL,
+            meta TEXT NOT NULL,
+            actor TEXT NOT NULL,
+            deleted_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_recycle_bin_deleted_at ON recycle_bin(deleted_at DESC);
         ",
     )?;
 

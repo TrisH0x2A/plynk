@@ -17,7 +17,7 @@ pub fn create_workspace(state: State<'_, AppState>, name: String) -> AppResult<W
 }
 
 #[tauri::command]
-pub fn delete_workspace(state: State<'_, AppState>, id: String) -> AppResult<()> {
+pub fn delete_workspace(state: State<'_, AppState>, id: String, user_name: Option<String>) -> AppResult<()> {
     let conn = state.db.lock().unwrap();
-    workspace_service::delete_workspace(&conn, &id)
+    workspace_service::delete_workspace(&conn, &id, user_name)
 }

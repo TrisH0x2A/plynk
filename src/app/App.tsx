@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 
 import { tauriApi } from "@/lib/tauri";
@@ -9,6 +9,7 @@ import { BoardList } from "@/features/dashboard/board-list";
 import { ActivityView } from "@/features/dashboard/activity-view";
 import { SettingsView } from "@/features/dashboard/settings-view";
 import { AppSettingsView } from "@/features/dashboard/app-settings-view";
+import { RecycleBinView } from "@/features/dashboard/recycle-bin-view";
 import { BackupView } from "@/features/dashboard/backup-view";
 import { BoardNavbar } from "@/features/board/board-navbar";
 import { ListContainer } from "@/features/board/list-container";
@@ -17,6 +18,7 @@ import { OnboardingModal } from "@/components/modals/onboarding-modal";
 import { WorkspaceModal } from "@/components/modals/workspace-modal";
 
 export const App = () => {
+  const queryClient = useQueryClient();
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("boards");
@@ -173,8 +175,9 @@ export const App = () => {
     if (!confirmed) return;
 
     try {
-      await tauriApi.deleteWorkspace(id);
-      toast.success(`Workspace "${name}" deleted`);
+      await tauriApi.deleteWorkspace(id, userName);
+      toast.success(`Workspace "${name}" moved to Recycle Bin`);
+      queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
       const remaining = workspaces.filter((w) => w.id !== id);
       refetchWorkspaces();
       if (activeWorkspaceId === id && remaining.length > 0) {
@@ -266,6 +269,9 @@ export const App = () => {
                   setUserName(name);
                 }}
               />
+            )}
+            {activeView === "bin" && (
+              <RecycleBinView onRefreshWorkspaces={refetchWorkspaces} />
             )}
             {activeView === "backup" && <BackupView />}
           </main>

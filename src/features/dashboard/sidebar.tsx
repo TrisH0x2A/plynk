@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { Plus, LayoutGrid, Activity, Settings, Database, Layers, Trash2, Moon, Sun, Github, Star } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -19,6 +20,11 @@ interface SidebarProps {
   onCreateWorkspace: () => void;
   onDeleteWorkspace?: (id: string, name: string) => void;
 }
+
+  const { data: binItems = [] } = useQuery({
+    queryKey: ["recycle-bin"],
+    queryFn: () => tauriApi.getRecycleBin(),
+  });
 
 export const Sidebar = ({
   userName = "SYS_ADMIN",

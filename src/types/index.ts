@@ -71,3 +71,17 @@ export interface ListOrderItem {
   id: string;
   order_idx: number;
 }
+
+export interface RecycleBinItem {
+  id: string;
+  item_type: "WORKSPACE" | "BOARD" | "CARD" | "LIST";
+  item_id: string;
+  title: string;
+  parent_workspace_id?: string;
+  parent_board_id?: string;
+  parent_list_id?: string;
+  payload: string;
+  meta: string;
+  actor: string;
+  deleted_at: string;
+}

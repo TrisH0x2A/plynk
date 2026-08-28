@@ -1,14 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Workspace,
-  Board,
-  ListWithCards,
-  List,
-  Card,
-  AuditLog,
-  CardOrderItem,
-  ListOrderItem,
-} from "@/types";
+import { Workspace, Board, List, Card, ListWithCards, AuditLog, ListOrderItem, CardOrderItem, RecycleBinItem } from "@/types";
 
 const getActiveUserName = (): string => {
   if (typeof window !== "undefined") {
@@ -26,8 +17,8 @@ export const tauriApi = {
   createWorkspace: async (name: string): Promise<Workspace> => {
     return await invoke("create_workspace", { name });
   },
-  deleteWorkspace: async (id: string): Promise<void> => {
-    return await invoke("delete_workspace", { id });
+  deleteWorkspace: async (id: string, userName?: string): Promise<void> => {
+    return await invoke("delete_workspace", { id, userName });
   },
 
   // Boards
@@ -108,6 +99,23 @@ export const tauriApi = {
   // Backup & Restore
   exportDatabase: async (targetPath: string): Promise<void> => {
     return await invoke("export_database", { targetPath });
+  },
+
+  // Recycle Bin
+  getRecycleBin: async (): Promise<RecycleBinItem[]> => {
+    return invoke("get_recycle_bin");
+  },
+  restoreBinItem: async (id: string): Promise<void> => {
+    return invoke("restore_bin_item", { id });
+  },
+  restoreAllBinItems: async (): Promise<void> => {
+    return invoke("restore_all_bin_items");
+  },
+  deleteBinItemPermanently: async (id: string): Promise<void> => {
+    return invoke("delete_bin_item_permanently", { id });
+  },
+  clearRecycleBin: async (): Promise<void> => {
+    return invoke("clear_recycle_bin");
   },
   openExternalUrl: async (url: string): Promise<void> => {
     try {

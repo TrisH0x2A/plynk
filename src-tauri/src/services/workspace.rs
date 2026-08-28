@@ -50,20 +50,7 @@ pub fn create_workspace(conn: &Connection, name: String) -> AppResult<Workspace>
     })
 }
 
-pub fn delete_workspace(conn: &Connection, id: &str) -> AppResult<()> {
-    // Check if workspace exists
-    let count: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM workspaces WHERE id = ?1",
-        params![id],
-        |row| row.get(0),
-    )?;
-
-    if count == 0 {
-        return Err(AppError::NotFound(format!("Workspace {} not found", id)));
-    }
-
-    // Delete workspace (cascade deletes boards, lists, cards, audit logs)
-    conn.execute("DELETE FROM workspaces WHERE id = ?1", params![id])?;
-
-    Ok(())
+pub fn delete_workspace(conn: &Connection, id: &str, user_name: Option<String>) -> AppResult<()> {
+    let actor = user_name.unwrap_or_else(|| "SYS_ADMIN".to_string());
+    crate::services::recycle_bin::soft_delete_workspace(conn, id, &actor)
 }
