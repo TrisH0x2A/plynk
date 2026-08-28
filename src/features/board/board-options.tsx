@@ -35,7 +35,7 @@ export const BoardOptions = ({ id, workspaceId, onDeleteSuccess }: BoardOptionsP
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="p-2 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-colors rounded-none cursor-pointer"
+          className="h-9 w-9 flex items-center justify-center bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:border-black dark:hover:border-[#A1A1AA] transition-colors rounded-none cursor-pointer"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>

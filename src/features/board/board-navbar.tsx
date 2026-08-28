@@ -22,9 +22,9 @@ export const BoardNavbar = ({ data, onDeleteSuccess }: BoardNavbarProps) => {
       <div className="flex items-center gap-x-3">
         <button
           type="button"
-          className="px-3.5 py-1.5 bg-[#FAFAFA] dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] font-mono text-xs uppercase text-[#09090B] dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-x-2 font-semibold cursor-pointer"
+          className="h-9 px-3.5 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] font-mono text-xs uppercase text-[#09090B] dark:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] hover:border-black dark:hover:border-[#A1A1AA] transition-colors flex items-center gap-x-2 font-semibold rounded-none cursor-pointer"
         >
-          <Filter className="h-3.5 w-3.5" />
+          <Filter className="h-3.5 w-3.5 text-[#71717A] dark:text-[#656467]" />
           <span>Filter</span>
         </button>
 
