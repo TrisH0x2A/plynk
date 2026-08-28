@@ -52,6 +52,8 @@ interface WhiteboardCanvasProps {
   onBack: () => void;
 }
 
+const FONT_SIZES = [12, 16, 20, 28, 36, 48, 64];
+
 const PRESET_COLORS: Color[] = [
   { r: 24, g: 24, b: 27 },    // Black / Dark Zinc
   { r: 244, g: 244, b: 245 }, // White / Light Zinc
@@ -97,6 +99,9 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   // Ref for the interactive canvas viewport container (needed for accurate coordinate mapping)
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Track newly created text layer to auto-focus
+  const pendingFocusLayerId = useRef<string | null>(null);
+
   // Auto-save debounce state
   const [isSaving, setIsSaving] = useState(false);
   const isDirty = useRef(false);
@@ -135,6 +140,22 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       isDirty.current = true;
     }
   };
+
+  // Auto-focus newly created text layers
+  useEffect(() => {
+    if (pendingFocusLayerId.current) {
+      const id = pendingFocusLayerId.current;
+      pendingFocusLayerId.current = null;
+      // Small delay to let React render the foreignObject
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-layer-id="${id}"] textarea`) as HTMLTextAreaElement;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(0, 0);
+        }
+      });
+    }
+  });
 
   // Auto-save to SQLite every 1.5 seconds when dirty
   useEffect(() => {
@@ -195,12 +216,13 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
     } else {
       newLayer = {
         type: LayerType.Text,
-        x: point.x - 60,
-        y: point.y - 16,
-        width: 160,
-        height: 32,
+        x: point.x,
+        y: point.y - 14,
+        width: 200,
+        height: 36,
         fill: lastColor,
         value: "",
+        fontSize: 20,
       };
     }
 
@@ -212,6 +234,11 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
     setSelectedLayerIds([layerId]);
     recordHistory(updatedLayers, updatedIds);
     setCanvasState({ mode: CanvasMode.None });
+
+    // Schedule auto-focus for text layers
+    if (layerType === LayerType.Text) {
+      pendingFocusLayerId.current = layerId;
+    }
   };
 
   // Middle-click and spacebar canvas panning
@@ -681,6 +708,39 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
             ))}
           </div>
 
+          {/* Font Size Controls — only for Text layers */}
+          {selectedLayerIds.length === 1 && layers[selectedLayerIds[0]]?.type === LayerType.Text && (
+            <div className="flex items-center gap-x-1 border-r border-zinc-200 dark:border-zinc-800 pr-2">
+              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#656467] uppercase mr-1">Size</span>
+              {FONT_SIZES.map((size) => {
+                const selectedLayer = layers[selectedLayerIds[0]];
+                const currentSize = selectedLayer && 'fontSize' in selectedLayer ? (selectedLayer as any).fontSize || 20 : 20;
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => {
+                      const updated = { ...layers };
+                      const id = selectedLayerIds[0];
+                      if (updated[id] && updated[id].type === LayerType.Text) {
+                        updated[id] = { ...updated[id], fontSize: size } as Layer;
+                      }
+                      setLayers(updated);
+                      recordHistory(updated, layerIds);
+                    }}
+                    className={`px-1.5 py-0.5 font-mono text-[10px] rounded-none transition-colors ${
+                      currentSize === size
+                        ? "bg-black dark:bg-white text-white dark:text-black font-bold"
+                        : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Layer Ordering */}
           <button
             type="button"
@@ -827,9 +887,11 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
             }
 
             if (layer.type === LayerType.Text) {
+              const fontSize = layer.fontSize || 20;
               return (
                 <g
                   key={layerId}
+                  data-layer-id={layerId}
                   transform={`translate(${layer.x}, ${layer.y})`}
                   onPointerDown={handleLayerPointerDown}
                   className="cursor-pointer"
@@ -839,47 +901,36 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                     height={layer.height}
                     style={{ overflow: "visible" }}
                   >
-                    <div
-                      contentEditable
-                      suppressContentEditableWarning
+                    <textarea
+                      value={layer.value || ""}
+                      onChange={(e) => {
+                        const updated = {
+                          ...layers,
+                          [layerId]: { ...layer, value: e.target.value },
+                        };
+                        setLayers(updated);
+                        isDirty.current = true;
+                      }}
                       onPointerDown={(e) => e.stopPropagation()}
-                      onBlur={(e) => {
-                        const text = (e.target as HTMLDivElement).innerText || "";
-                        const updated = {
-                          ...layers,
-                          [layerId]: { ...layer, value: text },
-                        };
-                        setLayers(updated);
-                        isDirty.current = true;
-                      }}
-                      onInput={(e) => {
-                        const text = (e.target as HTMLDivElement).innerText || "";
-                        const updated = {
-                          ...layers,
-                          [layerId]: { ...layer, value: text },
-                        };
-                        setLayers(updated);
-                        isDirty.current = true;
-                      }}
+                      placeholder="Type here..."
                       style={{
                         color: colorToCss(layer.fill),
-                        background: "transparent",
+                        backgroundColor: "transparent",
                         outline: "none",
                         border: "none",
+                        resize: "none",
                         fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                        fontSize: "14px",
+                        fontSize: `${fontSize}px`,
                         fontWeight: 700,
                         letterSpacing: "0.05em",
-                        textTransform: "uppercase" as const,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        minWidth: `${layer.width}px`,
+                        width: `${layer.width}px`,
                         minHeight: `${layer.height}px`,
                         padding: "4px 2px",
-                        lineHeight: "1.4",
+                        lineHeight: "1.3",
                         caretColor: colorToCss(layer.fill),
+                        direction: "ltr",
+                        textAlign: "left",
                       }}
-                      dangerouslySetInnerHTML={{ __html: layer.value || "" }}
                     />
                   </foreignObject>
                 </g>
