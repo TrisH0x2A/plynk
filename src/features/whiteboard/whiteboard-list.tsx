@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PlusCircle, MoreHorizontal, Edit3, Trash2, X, PenTool, Layers, Check } from "lucide-react";
+import { Plus, PlusCircle, MoreHorizontal, Edit3, Trash2, X, PenTool } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -8,6 +8,7 @@ import { tauriApi } from "@/lib/tauri";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface WhiteboardListProps {
   whiteboards: Whiteboard[];
@@ -39,7 +40,7 @@ export const WhiteboardList = ({
     e.preventDefault();
     const trimmed = newTitle.trim();
     if (!trimmed) {
-      toast.error("Whiteboard title cannot be empty");
+      toast.error("Title cannot be empty");
       return;
     }
 
@@ -47,7 +48,7 @@ export const WhiteboardList = ({
       setIsCreating(true);
       const created = await tauriApi.createWhiteboard(workspaceId, trimmed);
       queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", workspaceId] });
-      toast.success(`Whiteboard "${trimmed}" created`);
+      toast.success(`Created "${trimmed}"`);
       setNewTitle("");
       setIsCreateOpen(false);
       onSelectWhiteboard(created.id);
@@ -69,7 +70,7 @@ export const WhiteboardList = ({
     if (!wbToRename) return;
     const trimmed = renameTitle.trim();
     if (!trimmed) {
-      toast.error("Whiteboard title cannot be empty");
+      toast.error("Title cannot be empty");
       return;
     }
 
@@ -85,38 +86,20 @@ export const WhiteboardList = ({
 
   const handleDelete = async (e: React.MouseEvent, wb: Whiteboard) => {
     e.stopPropagation();
-    if (!confirm(`Move whiteboard "${wb.title}" to Recycle Bin?`)) return;
+    if (!confirm(`Move "${wb.title}" to Recycle Bin?`)) return;
 
     try {
       await tauriApi.deleteWhiteboard(wb.id, userName);
       queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", workspaceId] });
       queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
-      toast.success(`Whiteboard "${wb.title}" moved to Recycle Bin`);
+      toast.success(`Moved "${wb.title}" to Recycle Bin`);
     } catch (error) {
       toast.error(String(error));
     }
   };
 
-  const getLayerCount = (canvasData: string) => {
-    try {
-      const parsed = JSON.parse(canvasData);
-      return parsed.layerIds?.length || Object.keys(parsed.layers || {}).length || 0;
-    } catch {
-      return 0;
-    }
-  };
-
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="h-64 bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] animate-pulse rounded-none"
-          />
-        ))}
-      </div>
-    );
+    return <WhiteboardList.Skeleton />;
   }
 
   return (
@@ -128,7 +111,8 @@ export const WhiteboardList = ({
             <div className="flex items-center gap-x-2">
               <PenTool className="h-4 w-4 text-[#09090B] dark:text-white" />
               <h3 className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider">
-                <span className="dark:hidden">Initialize New Whiteboard</span><span className="hidden dark:inline">Initialize New Blackboard</span>
+                <span className="dark:hidden">Initialize New Whiteboard</span>
+                <span className="hidden dark:inline">Initialize New Blackboard</span>
               </h3>
             </div>
           </div>
@@ -136,12 +120,13 @@ export const WhiteboardList = ({
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="font-mono text-[11px] uppercase font-semibold text-[#71717A] dark:text-[#656467] tracking-wider block">
-                <span className="dark:hidden">Whiteboard Title</span><span className="hidden dark:inline">Blackboard Title</span>
+                <span className="dark:hidden">Whiteboard Title</span>
+                <span className="hidden dark:inline">Blackboard Title</span>
               </label>
               <Input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="ENTER WHITEBOARD TITLE (E.G. ARCHITECTURE SPRINT)..."
+                placeholder="ENTER TITLE (E.G. ARCHITECTURE SPRINT)..."
                 autoFocus
                 className="bg-zinc-50 dark:bg-black border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white font-sans text-xs px-3 py-2.5 rounded-none focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0 placeholder:text-[#71717A] dark:placeholder:text-[#656467]"
               />
@@ -174,7 +159,8 @@ export const WhiteboardList = ({
             <div className="flex items-center gap-x-2">
               <Edit3 className="h-4 w-4 text-[#09090B] dark:text-white" />
               <h3 className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider">
-                <span className="dark:hidden">Rename Whiteboard</span><span className="hidden dark:inline">Rename Blackboard</span>
+                <span className="dark:hidden">Rename Whiteboard</span>
+                <span className="hidden dark:inline">Rename Blackboard</span>
               </h3>
             </div>
           </div>
@@ -182,12 +168,13 @@ export const WhiteboardList = ({
           <form onSubmit={handleRenameSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="font-mono text-[11px] uppercase font-semibold text-[#71717A] dark:text-[#656467] tracking-wider block">
-                <span className="dark:hidden">Whiteboard Title</span><span className="hidden dark:inline">Blackboard Title</span>
+                <span className="dark:hidden">Whiteboard Title</span>
+                <span className="hidden dark:inline">Blackboard Title</span>
               </label>
               <Input
                 value={renameTitle}
                 onChange={(e) => setRenameTitle(e.target.value)}
-                placeholder="ENTER WHITEBOARD TITLE..."
+                placeholder="ENTER TITLE..."
                 autoFocus
                 className="bg-zinc-50 dark:bg-black border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white font-sans text-xs px-3 py-2.5 rounded-none focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0 placeholder:text-[#71717A] dark:placeholder:text-[#656467]"
               />
@@ -212,11 +199,33 @@ export const WhiteboardList = ({
         </DialogContent>
       </Dialog>
 
-      {/* Whiteboards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {whiteboards.map((wb, index) => {
-          const formattedId = `WB-${String(index + 1).padStart(3, "0")}`;
-          const layerCount = getLayerCount(wb.canvas_data);
+      {/* Header Section matching Boards Overview */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-y-4 pb-4 border-b border-[#E4E4E7] dark:border-[#27272A]">
+        <div>
+          <h2 className="font-sans text-4xl font-bold text-[#09090B] dark:text-white tracking-tighter">
+            <span className="dark:hidden">Your Whiteboards</span>
+            <span className="hidden dark:inline">Your Blackboards</span>
+          </h2>
+          <p className="font-mono text-xs text-[#71717A] dark:text-[#656467] uppercase tracking-wider mt-1">
+            Active Canvas Workspace
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="bg-black dark:bg-white text-white dark:text-black font-mono text-xs uppercase px-5 py-2.5 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-x-2 font-semibold cursor-pointer rounded-none"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="dark:hidden">Create Whiteboard</span>
+          <span className="hidden dark:inline">Create Blackboard</span>
+        </button>
+      </div>
+
+      {/* Boards Grid matching Boards Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {whiteboards.map((wb, idx) => {
+          const formattedId = `ID-${(idx + 1).toString().padStart(3, "0")}`;
 
           return (
             <div
@@ -249,7 +258,8 @@ export const WhiteboardList = ({
                       >
                         <div className="flex items-center justify-between pb-2 border-b border-[#E4E4E7] dark:border-[#27272A] mb-2">
                           <span className="font-mono text-[11px] font-semibold text-[#71717A] dark:text-[#656467] uppercase tracking-wider">
-                            <span className="dark:hidden">Whiteboard Options</span><span className="hidden dark:inline">Blackboard Options</span>
+                            <span className="dark:hidden">Whiteboard Options</span>
+                            <span className="hidden dark:inline">Blackboard Options</span>
                           </span>
                           <PopoverClose asChild>
                             <button
@@ -279,7 +289,10 @@ export const WhiteboardList = ({
                             className="w-full flex items-center gap-x-2.5 p-2 px-3 text-left font-mono text-xs uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors rounded-none cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            <span className="dark:hidden">Delete Whiteboard</span><span className="hidden dark:inline">Delete Blackboard</span>
+                            <span>
+                              <span className="dark:hidden">Delete Whiteboard</span>
+                              <span className="hidden dark:inline">Delete Blackboard</span>
+                            </span>
                           </button>
                         </div>
                       </PopoverContent>
@@ -287,26 +300,26 @@ export const WhiteboardList = ({
                   </div>
                 </div>
 
-                <h3 className="font-sans text-2xl font-bold text-[#09090B] dark:text-white mb-2 leading-tight group-hover:text-black dark:group-hover:text-white transition-colors line-clamp-2">
+                <h3 className="font-sans text-2xl font-bold text-[#09090B] dark:text-white mb-2 leading-tight group-hover:text-black dark:group-hover:text-white transition-colors">
                   {wb.title}
                 </h3>
-                <p className="font-sans text-sm text-[#71717A] dark:text-[#c4c7c8] line-clamp-2 flex items-center gap-x-1.5">
-                  <Layers className="h-3.5 w-3.5" />
-                  <span>{layerCount} {layerCount === 1 ? "Element" : "Elements"}</span>
+                <p className="font-sans text-sm text-[#71717A] dark:text-[#c4c7c8] line-clamp-2">
+                  <span className="dark:hidden">Local offline whiteboard canvas</span>
+                  <span className="hidden dark:inline">Local offline blackboard canvas</span>
                 </p>
               </div>
 
               <div className="flex items-center gap-x-2 mt-auto border-t border-[#E4E4E7] dark:border-[#18181B] pt-4">
-                <span className="w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400" />
+                <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-white" />
                 <span className="font-mono text-xs text-[#09090B] dark:text-white uppercase tracking-wider font-semibold">
-                  Vector Canvas
+                  Active
                 </span>
               </div>
             </div>
           );
         })}
 
-        {/* Initialize New Whiteboard Tile */}
+        {/* Initialize New Board Tile */}
         <div
           role="button"
           onClick={() => setIsCreateOpen(true)}
@@ -314,10 +327,21 @@ export const WhiteboardList = ({
         >
           <PlusCircle className="h-10 w-10 mb-3 group-hover:scale-110 transition-transform text-[#71717A] dark:text-[#656467] group-hover:text-black dark:group-hover:text-white" />
           <span className="font-mono text-xs uppercase tracking-wider font-semibold">
-            <span className="dark:hidden">Initialize New Whiteboard</span><span className="hidden dark:inline">Initialize New Blackboard</span>
+            <span className="dark:hidden">Initialize New Whiteboard</span>
+            <span className="hidden dark:inline">Initialize New Blackboard</span>
           </span>
         </div>
       </div>
+    </div>
+  );
+};
+
+WhiteboardList.Skeleton = function SkeletonWhiteboardList() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
+      <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
+      <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
     </div>
   );
 };
