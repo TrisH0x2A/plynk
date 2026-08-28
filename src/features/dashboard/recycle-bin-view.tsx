@@ -161,7 +161,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
             { id: "ALL", label: "ALL", count: items.length },
             { id: "WORKSPACE", label: "WORKSPACES", count: workspaceCount },
             { id: "BOARD", label: "BOARDS", count: boardCount },
-            { id: "WHITEBOARD", label: "WHITEBOARDS", count: whiteboardCount },
+            { id: "WHITEBOARD", label: "BOARDS / CANVAS", count: whiteboardCount },
             { id: "LIST", label: "LISTS", count: listCount },
             { id: "CARD", label: "CARDS", count: cardCount },
           ].map((tab) => (

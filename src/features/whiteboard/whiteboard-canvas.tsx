@@ -663,7 +663,8 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
           title="Back to Whiteboards"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">WHITEBOARDS</span>
+          <span className="hidden sm:inline dark:hidden">WHITEBOARDS</span>
+          <span className="hidden dark:sm:inline">BLACKBOARDS</span>
         </button>
         <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
         <span className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider truncate max-w-[200px]">

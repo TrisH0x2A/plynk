@@ -128,7 +128,7 @@ export const WhiteboardList = ({
             <div className="flex items-center gap-x-2">
               <PenTool className="h-4 w-4 text-[#09090B] dark:text-white" />
               <h3 className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider">
-                Initialize New Whiteboard
+                <span className="dark:hidden">Initialize New Whiteboard</span><span className="hidden dark:inline">Initialize New Blackboard</span>
               </h3>
             </div>
           </div>
@@ -136,7 +136,7 @@ export const WhiteboardList = ({
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="font-mono text-[11px] uppercase font-semibold text-[#71717A] dark:text-[#656467] tracking-wider block">
-                Whiteboard Title
+                <span className="dark:hidden">Whiteboard Title</span><span className="hidden dark:inline">Blackboard Title</span>
               </label>
               <Input
                 value={newTitle}
@@ -174,7 +174,7 @@ export const WhiteboardList = ({
             <div className="flex items-center gap-x-2">
               <Edit3 className="h-4 w-4 text-[#09090B] dark:text-white" />
               <h3 className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider">
-                Rename Whiteboard
+                <span className="dark:hidden">Rename Whiteboard</span><span className="hidden dark:inline">Rename Blackboard</span>
               </h3>
             </div>
           </div>
@@ -182,7 +182,7 @@ export const WhiteboardList = ({
           <form onSubmit={handleRenameSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="font-mono text-[11px] uppercase font-semibold text-[#71717A] dark:text-[#656467] tracking-wider block">
-                Whiteboard Title
+                <span className="dark:hidden">Whiteboard Title</span><span className="hidden dark:inline">Blackboard Title</span>
               </label>
               <Input
                 value={renameTitle}
@@ -249,7 +249,7 @@ export const WhiteboardList = ({
                       >
                         <div className="flex items-center justify-between pb-2 border-b border-[#E4E4E7] dark:border-[#27272A] mb-2">
                           <span className="font-mono text-[11px] font-semibold text-[#71717A] dark:text-[#656467] uppercase tracking-wider">
-                            Whiteboard Options
+                            <span className="dark:hidden">Whiteboard Options</span><span className="hidden dark:inline">Blackboard Options</span>
                           </span>
                           <PopoverClose asChild>
                             <button
@@ -279,7 +279,7 @@ export const WhiteboardList = ({
                             className="w-full flex items-center gap-x-2.5 p-2 px-3 text-left font-mono text-xs uppercase tracking-wider text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors rounded-none cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            <span>Delete Whiteboard</span>
+                            <span className="dark:hidden">Delete Whiteboard</span><span className="hidden dark:inline">Delete Blackboard</span>
                           </button>
                         </div>
                       </PopoverContent>
@@ -314,7 +314,7 @@ export const WhiteboardList = ({
         >
           <PlusCircle className="h-10 w-10 mb-3 group-hover:scale-110 transition-transform text-[#71717A] dark:text-[#656467] group-hover:text-black dark:group-hover:text-white" />
           <span className="font-mono text-xs uppercase tracking-wider font-semibold">
-            Initialize New Whiteboard
+            <span className="dark:hidden">Initialize New Whiteboard</span><span className="hidden dark:inline">Initialize New Blackboard</span>
           </span>
         </div>
       </div>

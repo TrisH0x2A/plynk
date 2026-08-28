@@ -54,7 +54,7 @@ export const Sidebar = ({
 
   const navItems = [
     { id: "boards", label: "BOARDS", icon: LayoutGrid },
-    { id: "whiteboards", label: "WHITEBOARDS", icon: PenTool },
+    { id: "whiteboards", label: theme === "light" ? "WHITEBOARDS" : "BLACKBOARDS", icon: PenTool },
     { id: "activity", label: "ACTIVITY", icon: Activity },
     { id: "settings", label: "WORKSPACE", icon: Layers },
     { id: "backup", label: "BACKUP", icon: Database },
