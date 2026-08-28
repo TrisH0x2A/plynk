@@ -7,6 +7,7 @@ import { ListWithCards } from "@/types";
 import { CardForm } from "./card-form";
 import { CardItem } from "./card-item";
 import { ListHeader } from "./list-header";
+import { useBoardFilter } from "@/stores/use-board-filter";
 
 interface ListItemProps {
   data: ListWithCards;
@@ -21,6 +22,33 @@ export const ListItem = ({ data, index, boardId }: ListItemProps) => {
   const disableEditing = () => {
     setIsEditing(false);
   };
+
+  const { keyword, selectedStatuses, selectedLabels, getActiveFilterCount } = useBoardFilter();
+  const hasActiveFilters = getActiveFilterCount() > 0;
+
+  const filteredCards = data.cards.filter((card) => {
+    if (keyword.trim()) {
+      const q = keyword.toLowerCase().trim();
+      const matchTitle = card.title.toLowerCase().includes(q);
+      const matchDesc = card.description?.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc) return false;
+    }
+    if (selectedStatuses.length > 0) {
+      const cardStatus = card.status || "ACTIVE";
+      if (!selectedStatuses.includes(cardStatus)) return false;
+    }
+    if (selectedLabels.length > 0) {
+      let cardLabels: string[] = [];
+      try {
+        if (card.labels) cardLabels = JSON.parse(card.labels);
+      } catch {
+        if (card.labels) cardLabels = card.labels.split(",").map((s) => s.trim());
+      }
+      const hasMatch = cardLabels.some((l) => selectedLabels.includes(l));
+      if (!hasMatch) return false;
+    }
+    return true;
+  });
 
   const enableEditing = () => {
     setIsEditing(true);
@@ -59,9 +87,14 @@ export const ListItem = ({ data, index, boardId }: ListItemProps) => {
                   )}
                   style={{ minHeight: 10 }}
                 >
-                  {data.cards.map((card, index) => (
+                  {filteredCards.map((card, index) => (
                     <CardItem index={index} key={card.id} data={card} />
                   ))}
+                  {filteredCards.length === 0 && data.cards.length > 0 && hasActiveFilters && (
+                    <div className="py-6 text-center text-[10px] font-mono text-[#71717A] dark:text-[#656467] uppercase tracking-wider">
+                      NO MATCHING CARDS
+                    </div>
+                  )}
                   {provided.placeholder}
                 </ol>
               )}
