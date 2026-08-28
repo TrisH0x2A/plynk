@@ -348,6 +348,12 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       recordHistory(layers, layerIds);
     }
 
+    // If user clicked empty canvas without dragging (Pressing → didn't become SelectionNet),
+    // clear selection
+    if (canvasState.mode === CanvasMode.Pressing) {
+      setSelectedLayerIds([]);
+    }
+
     setPencilDraft(null);
     setCanvasState({ mode: CanvasMode.None });
   };
@@ -796,19 +802,25 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                     className="drop-shadow-md"
                   />
                   <foreignObject width={layer.width} height={layer.height}>
-                    <textarea
-                      value={layer.value || ""}
-                      onChange={(e) => {
-                        const updated = {
-                          ...layers,
-                          [layerId]: { ...layer, value: e.target.value },
-                        };
-                        setLayers(updated);
-                        isDirty.current = true;
-                      }}
-                      className="w-full h-full p-3 font-sans text-xs bg-transparent resize-none border-none outline-none text-zinc-900 font-semibold"
-                      placeholder="Type note..."
-                    />
+                    <div
+                      style={{ backgroundColor: colorToCss(layer.fill), width: "100%", height: "100%" }}
+                    >
+                      <textarea
+                        value={layer.value || ""}
+                        onChange={(e) => {
+                          const updated = {
+                            ...layers,
+                            [layerId]: { ...layer, value: e.target.value },
+                          };
+                          setLayers(updated);
+                          isDirty.current = true;
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="w-full h-full p-3 font-sans text-xs bg-transparent resize-none border-none outline-none font-semibold"
+                        style={{ color: getContrastingTextColor(layer.fill) }}
+                        placeholder="Type note..."
+                      />
+                    </div>
                   </foreignObject>
                 </g>
               );
@@ -833,6 +845,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                         setLayers(updated);
                         isDirty.current = true;
                       }}
+                      onPointerDown={(e) => e.stopPropagation()}
                       className="font-mono text-sm font-bold bg-transparent outline-none border-none uppercase tracking-wider"
                       style={{ color: colorToCss(layer.fill) }}
                     />
