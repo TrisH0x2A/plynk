@@ -96,7 +96,3 @@ Plynk is engineered around a high-contrast industrial monochrome design language
 Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for details.
 
 ---
-
-<p align="center">
-  Crafted by <a href="https://github.com/TrisH0x2A"><strong>TrisH0x2A</strong></a>
-</p>
