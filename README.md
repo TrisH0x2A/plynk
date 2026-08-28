@@ -14,36 +14,37 @@
 
 ---
 
-## ⚡ Overview
+## Overview
 
-**Plynk** is an ultra-fast, local-first Kanban desktop application built from the ground up for developers and power users who value speed, privacy, and minimalist brutalist aesthetics. 
+Plynk is an ultra-fast, local-first Kanban desktop application built from the ground up for developers and power users who value speed, privacy, and minimalist brutalist aesthetics.
 
-Unlike web-based project management tools, Plynk runs **100% locally on your machine**, stores all your data in an embedded SQLite database (`plynk.db`), and requires **zero internet connection, zero subscriptions, and zero tracking**.
-
----
-
-## 🖤 Design System: Tech-Noir & Pure Monochrome
-
-Plynk is engineered around a high-contrast, industrial monochrome design language:
-- **Dark Mode**: Pitch-black canvas (`#000000` / `#09090B`), zinc borders, and stark white typography.
-- **Light Mode**: Pure paper-white canvas (`#FFFFFF` / `#F4F4F5`), sharp dark ink borders, and rich high-contrast status accents.
-- **Micro-Animations**: Smooth hardware-accelerated animations, clean drag-and-drop feedback, and DotLottie onboarding.
+Unlike cloud-dependent task management software, Plynk executes completely locally on your system, persists all state in an embedded SQLite database (`plynk.db`), and requires zero network access, zero account creation, and zero external telemetry.
 
 ---
 
-## ✨ Core Features
+## Design System: Tech-Noir & Pure Monochrome
 
-- 🗂️ **Workspace Architecture**: Organize projects across multiple discrete workspaces with isolated boards, lists, and activity streams.
-- 📋 **Fluid Drag & Drop**: Instant list and card reordering powered by `@hello-pangea/dnd` with jitter-free layout shifts.
-- 🏷️ **Status & Label System**: Rich card lifecycle management (**ACTIVE**, **IN PROGRESS**, **COMPLETED**, **POSTPONED**) and high-contrast color-coded labels.
-- 📜 **System Activity Timeline**: Detailed chronological audit logging tracking every structural event, rename, status transition, and administrative action.
-- 💾 **Local Backup & Restore**: One-click binary SQLite snapshot export and restore to any folder on your computer.
-- 🌗 **Persistent Theme Switcher**: Instant switching between pure Monochrome Dark and Monochrome Light themes.
-- 🔒 **Zero Telemetry & 100% Privacy**: All cards, boards, and logs remain strictly on your local disk.
+Plynk is engineered around a high-contrast industrial monochrome design language:
+
+- **Dark Mode**: Deep charcoal and obsidian canvas (`#000000` / `#09090B`), sharp zinc borders, and stark white typography.
+- **Light Mode**: Inverted paper-white canvas (`#FFFFFF` / `#F4F4F5`), solid dark ink borders, and deep high-contrast status accents.
+- **Micro-Interactions**: Hardware-accelerated transitions, fluid drag-and-drop feedback, and streamlined onboarding.
 
 ---
 
-## 🏗️ Tech Stack
+## Core Features
+
+- **Workspace Architecture**: Organize projects across multiple discrete workspaces with isolated boards, lists, and activity streams.
+- **Fluid Drag & Drop**: Instant list and card reordering powered by `@hello-pangea/dnd` with jitter-free layout shifts.
+- **Status & Label System**: Rich card lifecycle management (**ACTIVE**, **IN PROGRESS**, **COMPLETED**, **POSTPONED**) with color-coded classification tags.
+- **System Activity Timeline**: Detailed chronological audit logging tracking structural events, renames, status transitions, and administrative actions.
+- **Local Backup & Restore**: One-click binary SQLite snapshot export and restore to any folder on your machine.
+- **Persistent Theme Switcher**: Instant switching between pure Monochrome Dark and Monochrome Light themes.
+- **Zero Telemetry & 100% Privacy**: All cards, boards, and logs remain strictly on your local disk.
+
+---
+
+## Tech Stack
 
 | Layer | Technologies |
 | :--- | :--- |
@@ -56,9 +57,10 @@ Plynk is engineered around a high-contrast, industrial monochrome design languag
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (v18 or later)
 - [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
 - [Rust](https://www.rust-lang.org/tools/install) (stable toolchain)
@@ -76,7 +78,7 @@ Plynk is engineered around a high-contrast, industrial monochrome design languag
    pnpm install
    ```
 
-3. **Start the development app**:
+3. **Start the application in development**:
    ```bash
    pnpm tauri:dev
    ```
@@ -85,48 +87,16 @@ Plynk is engineered around a high-contrast, industrial monochrome design languag
    ```bash
    pnpm tauri:build
    ```
-   Compiled installer packages will be output to `src-tauri/target/release/bundle/`.
+   Compiled binaries and installers are output to `src-tauri/target/release/bundle/`.
 
 ---
 
-## 📂 Project Architecture
+## License
 
-```
-Plynk/
-├── .github/
-│   ├── workflows/ci.yml       # Automated GitHub Actions CI pipeline
-│   └── FUNDING.yml            # Open-source sponsorship
-├── src/
-│   ├── app/                   # Root App layout and shell
-│   ├── components/            # Brutalist UI modals, pickers, and dialogs
-│   ├── constants/             # Centralized links and configuration
-│   ├── features/
-│   │   ├── board/             # Board view, columns, cards, and drag-and-drop
-│   │   └── dashboard/         # Sidebar, activity logs, settings, and backup
-│   ├── lib/                   # Tauri IPC wrappers and query utilities
-│   └── styles/                # Global monochrome design tokens and theme rules
-├── src-tauri/
-│   ├── capabilities/          # Tauri v2 security ACL policies
-│   ├── src/
-│   │   ├── commands/          # Rust IPC command handlers
-│   │   ├── db/                # SQLite connection pool and schema migrations
-│   │   ├── models/            # Rust data structures
-│   │   ├── services/          # Business logic and file-based audit trails
-│   │   └── lib.rs             # Tauri application entrypoint
-│   ├── tauri.conf.json        # Tauri desktop bundle configuration
-│   └── Cargo.toml             # Rust dependencies and profile optimizations
-├── package.json
-└── README.md
-```
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for more information.
+Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for details.
 
 ---
 
 <p align="center">
-  Crafted with precision by <a href="https://github.com/TrisH0x2A"><strong>TrisH0x2A</strong></a>
+  Crafted by <a href="https://github.com/TrisH0x2A"><strong>TrisH0x2A</strong></a>
 </p>
