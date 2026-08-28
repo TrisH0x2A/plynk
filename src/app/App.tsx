@@ -41,6 +41,31 @@ export const App = () => {
     localStorage.setItem("plynk_theme", theme);
   }, [theme]);
 
+  // Global capture-phase shortcut listener
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+T or Cmd+T: Theme toggle
+      if ((e.ctrlKey || e.metaKey) && (e.key === "t" || e.key === "T" || e.code === "KeyT")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+        return;
+      }
+
+      // Ctrl+F or Cmd+F: Open Board Filter
+      if ((e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "F" || e.code === "KeyF")) {
+        if (activeBoardId) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.dispatchEvent(new CustomEvent("plynk:open-filter"));
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown, true);
+  }, [activeBoardId]);
+
   // Onboarding state
   const [userName, setUserName] = useState<string>("SYS_ADMIN");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);

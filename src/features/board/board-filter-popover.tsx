@@ -25,6 +25,14 @@ const PRESET_LABELS = [
 ];
 
 export const BoardFilterPopover = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleOpen = () => setIsOpen((prev) => !prev);
+    window.addEventListener("plynk:open-filter", handleOpen);
+    return () => window.removeEventListener("plynk:open-filter", handleOpen);
+  }, []);
+
   const {
     keyword,
     selectedStatuses,
@@ -39,7 +47,7 @@ export const BoardFilterPopover = () => {
   const activeCount = getActiveFilterCount();
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"

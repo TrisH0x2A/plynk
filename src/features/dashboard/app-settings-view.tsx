@@ -41,10 +41,10 @@ export const AppSettingsView = ({
 
   const shortcuts = [
     { key: "CTRL + T", desc: "Toggle between Dark and Light mode" },
-    { key: "ESC", desc: "Close dialogs or cancel active input" },
+    { key: "CTRL + F", desc: "Open board search and card filter" },
     { key: "ENTER", desc: "Submit new card or column" },
+    { key: "ESC", desc: "Close dialogs or cancel active input" },
     { key: "CLICK + DRAG", desc: "Reorder lists and cards seamlessly" },
-    { key: "FILTER", desc: "Filter cards by keyword, status & labels" },
   ];
 
   return (
