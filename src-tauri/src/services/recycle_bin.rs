@@ -1,3 +1,4 @@
+use crate::services::activity::create_audit_log_with_user;
 use rusqlite::{params, Connection};
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};

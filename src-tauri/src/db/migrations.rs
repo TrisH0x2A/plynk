@@ -121,7 +121,7 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
             id TEXT PRIMARY KEY,
             workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
-            canvas_data TEXT NOT NULL DEFAULT '{"layers":{},"layerIds":[]}',
+            canvas_data TEXT NOT NULL DEFAULT '{}',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );
