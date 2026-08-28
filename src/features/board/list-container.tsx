@@ -33,14 +33,26 @@ export const ListContainer = ({ data, boardId, scrollContainerRef }: ListContain
   const skipNextSync = useRef(false);
 
   useEffect(() => {
-    // If we just did an optimistic drag update, skip the next server sync
-    // to prevent the double-render height jitter
+    // Check if card or list counts changed (e.g. newly created or deleted card/list)
+    const prevCardCount = orderedData.reduce((acc, l) => acc + (l.cards?.length || 0), 0);
+    const newCardCount = data.reduce((acc, l) => acc + (l.cards?.length || 0), 0);
+    const listCountChanged = data.length !== orderedData.length;
+
+    // ALWAYS sync immediately whenever cards or lists are added or removed
+    if (listCountChanged || prevCardCount !== newCardCount) {
+      skipNextSync.current = false;
+      setOrderedData(data);
+      return;
+    }
+
+    // Only skip once if this was an in-place drag reorder
     if (skipNextSync.current) {
       skipNextSync.current = false;
       return;
     }
+
     setOrderedData(data);
-  }, [data]);
+  }, [data, orderedData]);
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, type } = result;

@@ -38,13 +38,31 @@ export const CardForm = forwardRef<HTMLTextAreaElement, CardFormProps>(
 
     const onSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!title.trim()) return;
+      const cardTitle = title.trim();
+      if (!cardTitle) return;
 
       try {
-        await tauriApi.createCard(listId, title);
-        toast.success(`Card "${title}" created`);
-        queryClient.invalidateQueries({ queryKey: ["board-lists", boardId] });
+        const created = await tauriApi.createCard(listId, cardTitle);
+        toast.success(`Card "${cardTitle}" created`);
         setTitle("");
+
+        // Optimistically insert card into local cache so it appears immediately
+        queryClient.setQueryData<any[]>(["board-lists", boardId], (old) => {
+          if (!old) return old;
+          return old.map((l) => {
+            if (l.list.id === listId) {
+              const existingCards = l.cards || [];
+              return {
+                ...l,
+                cards: [...existingCards, created],
+              };
+            }
+            return l;
+          });
+        });
+
+        // Trigger background invalidation to ensure total database consistency
+        queryClient.invalidateQueries({ queryKey: ["board-lists", boardId] });
       } catch (error) {
         toast.error(String(error));
       }
