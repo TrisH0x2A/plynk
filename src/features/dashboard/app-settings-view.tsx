@@ -150,7 +150,7 @@ export const AppSettingsView = ({
 
         <div className="space-y-3 font-mono text-xs">
           <div className="border-l-2 border-black dark:border-white pl-3 space-y-1">
-            <p className="font-bold text-[#09090B] dark:text-white">v1.0.0 — Production Release</p>
+            <p className="font-bold text-[#09090B] dark:text-white">v1.0.0 — Initial Release</p>
             <ul className="text-[#71717A] dark:text-[#656467] text-[11px] space-y-0.5 list-disc list-inside">
               <li>100% offline local embedded SQLite database persistence.</li>
               <li>Pure monochrome Tech-Noir brutalist aesthetic with Dark/Light modes.</li>
