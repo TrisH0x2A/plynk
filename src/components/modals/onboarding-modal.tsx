@@ -97,7 +97,7 @@ export const OnboardingModal = ({ isOpen, theme = "dark", onClose, onComplete }:
                 setName(e.target.value);
                 if (error) setError("");
               }}
-              placeholder="ENTER YOUR CALLSIGN (E.G. DEXTER)..."
+              placeholder="ENTER YOUR CALLSIGN..."
               className="bg-zinc-50 dark:bg-black border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white placeholder:text-[#71717A] dark:placeholder:text-[#656467] focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0 h-11 text-xs font-mono uppercase rounded-none"
               autoFocus
             />
