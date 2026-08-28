@@ -74,7 +74,7 @@ export const WhiteboardList = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-12">
       {/* Rename Whiteboard Modal Dialog */}
       <Dialog open={!!wbToRename} onOpenChange={() => setWbToRename(null)}>
         <DialogContent className="bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white max-w-md rounded-none shadow-2xl p-6">
@@ -275,10 +275,12 @@ export const WhiteboardList = ({
 
 WhiteboardList.Skeleton = function SkeletonWhiteboardList() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
-      <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
-      <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
+    <div className="max-w-7xl mx-auto space-y-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
+        <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
+        <Skeleton className="h-64 w-full bg-zinc-100 dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]" />
+      </div>
     </div>
   );
 };
