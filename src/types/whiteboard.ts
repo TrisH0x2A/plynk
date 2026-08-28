@@ -7,15 +7,14 @@ export type Color = {
 export type Camera = {
   x: number;
   y: number;
-  zoom: number;
 };
 
 export enum LayerType {
-  Rectangle = "Rectangle",
-  Ellipse = "Ellipse",
-  Path = "Path",
-  Text = "Text",
-  Note = "Note",
+  Rectangle,
+  Ellipse,
+  Path,
+  Text,
+  Note,
 }
 
 export type RectangleLayer = {
@@ -45,7 +44,7 @@ export type PathLayer = {
   height: number;
   width: number;
   fill: Color;
-  points: number[][]; // [x, y, pressure]
+  points: number[][];
   value?: string;
 };
 
@@ -57,7 +56,6 @@ export type TextLayer = {
   width: number;
   fill: Color;
   value?: string;
-  fontSize?: number;
 };
 
 export type NoteLayer = {
@@ -68,10 +66,7 @@ export type NoteLayer = {
   width: number;
   fill: Color;
   value?: string;
-  fontSize?: number;
 };
-
-export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer;
 
 export type Point = {
   x: number;
@@ -92,16 +87,6 @@ export enum Side {
   Right = 8,
 }
 
-export enum CanvasMode {
-  None = "None",
-  Pressing = "Pressing",
-  SelectionNet = "SelectionNet",
-  Translating = "Translating",
-  Inserting = "Inserting",
-  Resizing = "Resizing",
-  Pencil = "Pencil",
-}
-
 export type CanvasState =
   | {
       mode: CanvasMode.None;
@@ -117,20 +102,32 @@ export type CanvasState =
     }
   | {
       mode: CanvasMode.Inserting;
-      layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note;
+      layerType: LayerType.Rectangle | LayerType.Ellipse | LayerType.Text | LayerType.Note;
     }
   | {
       mode: CanvasMode.Pencil;
     }
   | {
-      mode: CanvasMode.Pressing;
-      origin: Point;
-    }
-  | {
       mode: CanvasMode.Resizing;
       initialBounds: XYWH;
       corner: Side;
+    }
+  | {
+      mode: CanvasMode.Pressing;
+      origin: Point;
     };
+
+export enum CanvasMode {
+  None,
+  Pressing,
+  SelectionNet,
+  Translating,
+  Inserting,
+  Resizing,
+  Pencil,
+}
+
+export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer;
 
 export interface Whiteboard {
   id: string;

@@ -1,26 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  ArrowLeft,
-  MousePointer,
-  Square,
-  Circle,
-  Type,
-  StickyNote,
-  Pencil,
-  Undo2,
-  Redo2,
-  Trash2,
-  Copy,
-  BringToFront,
-  SendToBack,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Download,
-  Check,
-} from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { ArrowLeft, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
-import getStroke from "perfect-freehand";
 
 import {
   Camera,
@@ -29,7 +9,6 @@ import {
   Color,
   Layer,
   LayerType,
-  PathLayer,
   Point,
   Side,
   Whiteboard,
@@ -38,53 +17,56 @@ import {
 } from "@/types/whiteboard";
 import { tauriApi } from "@/lib/tauri";
 import {
+  boundingBox,
   colorToCss,
-  getContrastingTextColor,
-  getSvgPathFromStroke,
+  findIntersectingLayersWithRectangle,
   penPointsToPathLayer,
   pointerEventToCanvasPoint,
   resizeBounds,
-  findIntersectingLayersWithRectangle,
 } from "@/lib/whiteboard-utils";
+
+import { LayerPreview } from "./layer-preview";
+import { SelectionBox } from "./selection-box";
+import { SelectionTools } from "./selection-tools";
+import { Toolbar } from "./toolbar";
+import { Path } from "./path";
+
+const MAX_LAYERS = 200;
 
 interface WhiteboardCanvasProps {
   whiteboard: Whiteboard;
   onBack: () => void;
 }
 
-const FONT_SIZES = [12, 16, 20, 28, 36, 48, 64];
-
-const PRESET_COLORS: Color[] = [
-  { r: 24, g: 24, b: 27 },    // Black / Dark Zinc
-  { r: 244, g: 244, b: 245 }, // White / Light Zinc
-  { r: 225, g: 29, b: 72 },   // Rose Red
-  { r: 234, g: 88, b: 12 },   // Orange
-  { r: 234, g: 179, b: 8 },   // Yellow / Amber
-  { r: 16, g: 185, b: 129 },  // Emerald Green
-  { r: 37, g: 99, b: 235 },   // Electric Blue
-  { r: 147, g: 51, b: 234 },  // Purple
-];
-
 export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) => {
   // Parse initial canvas data
-  const initialData: WhiteboardCanvasData = (() => {
+  const initialData: WhiteboardCanvasData = useMemo(() => {
     try {
       const parsed = JSON.parse(whiteboard.canvas_data);
       return {
         layers: parsed.layers || {},
         layerIds: parsed.layerIds || [],
-        camera: parsed.camera || { x: 0, y: 0, zoom: 1 },
+        camera: parsed.camera || { x: 0, y: 0 },
       };
     } catch {
-      return { layers: {}, layerIds: [], camera: { x: 0, y: 0, zoom: 1 } };
+      return { layers: {}, layerIds: [], camera: { x: 0, y: 0 } };
     }
-  })();
+  }, [whiteboard.canvas_data]);
 
   const [layers, setLayers] = useState<Record<string, Layer>>(initialData.layers);
   const [layerIds, setLayerIds] = useState<string[]>(initialData.layerIds);
-  const [camera, setCamera] = useState<Camera>(initialData.camera || { x: 0, y: 0, zoom: 1 });
-  const [selectedLayerIds, setSelectedLayerIds] = useState<string[]>([]);
-  const [lastColor, setLastColor] = useState<Color>(PRESET_COLORS[0]);
+  const [camera, setCamera] = useState<Camera>(initialData.camera || { x: 0, y: 0 });
+  const [selection, setSelection] = useState<string[]>([]);
+  const [lastUsedColor, setLastUsedColor] = useState<Color>({
+    r: 243,
+    g: 82,
+    b: 35,
+  });
+
+  const [canvasState, setCanvasState] = useState<CanvasState>({
+    mode: CanvasMode.None,
+  });
+  const [pencilDraft, setPencilDraft] = useState<number[][] | null>(null);
 
   // History stack for Undo / Redo
   const [history, setHistory] = useState<{ layers: Record<string, Layer>; layerIds: string[] }[]>([
@@ -92,21 +74,14 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   ]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-  // Canvas Mode State
-  const [canvasState, setCanvasState] = useState<CanvasState>({ mode: CanvasMode.None });
-  const [pencilDraft, setPencilDraft] = useState<number[][] | null>(null);
-
-  // Ref for the interactive canvas viewport container (needed for accurate coordinate mapping)
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Track newly created text layer to auto-focus
-  const pendingFocusLayerId = useRef<string | null>(null);
-
   // Auto-save debounce state
   const [isSaving, setIsSaving] = useState(false);
   const isDirty = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Push history entry
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
   const recordHistory = useCallback(
     (newLayers: Record<string, Layer>, newLayerIds: string[]) => {
       setHistory((prev) => {
@@ -119,45 +94,29 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
     [historyIndex]
   );
 
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
       const prev = history[historyIndex - 1];
       setLayers(prev.layers);
       setLayerIds(prev.layerIds);
-      setHistoryIndex(historyIndex - 1);
-      setSelectedLayerIds([]);
+      setHistoryIndex((idx) => idx - 1);
+      setSelection([]);
       isDirty.current = true;
     }
-  };
+  }, [history, historyIndex]);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const next = history[historyIndex + 1];
       setLayers(next.layers);
       setLayerIds(next.layerIds);
-      setHistoryIndex(historyIndex + 1);
-      setSelectedLayerIds([]);
+      setHistoryIndex((idx) => idx + 1);
+      setSelection([]);
       isDirty.current = true;
     }
-  };
+  }, [history, historyIndex]);
 
-  // Auto-focus newly created text layers
-  useEffect(() => {
-    if (pendingFocusLayerId.current) {
-      const id = pendingFocusLayerId.current;
-      pendingFocusLayerId.current = null;
-      // Small delay to let React render the foreignObject
-      requestAnimationFrame(() => {
-        const el = document.querySelector(`[data-layer-id="${id}"] textarea`) as HTMLTextAreaElement;
-        if (el) {
-          el.focus();
-          el.setSelectionRange(0, 0);
-        }
-      });
-    }
-  });
-
-  // Auto-save to SQLite every 1.5 seconds when dirty
+  // Debounced auto-save to SQLite
   useEffect(() => {
     const timer = setInterval(async () => {
       if (isDirty.current) {
@@ -167,269 +126,464 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
           const payload = JSON.stringify({ layers, layerIds, camera });
           await tauriApi.saveWhiteboardCanvas(whiteboard.id, payload);
         } catch {
-          // Silent retry
+          // Retry on next cycle
         } finally {
           setIsSaving(false);
         }
       }
-    }, 1200);
+    }, 1000);
 
     return () => clearInterval(timer);
   }, [layers, layerIds, camera, whiteboard.id]);
 
-  // Insert standard shape / note / text
-  const insertLayer = (
-    layerType: LayerType.Rectangle | LayerType.Ellipse | LayerType.Text | LayerType.Note,
-    point: Point
-  ) => {
-    const layerId = "layer_" + Math.random().toString(36).substring(2, 9);
-    let newLayer: Layer;
-
-    if (layerType === LayerType.Rectangle) {
-      newLayer = {
-        type: LayerType.Rectangle,
-        x: point.x - 50,
-        y: point.y - 50,
-        width: 120,
-        height: 100,
-        fill: lastColor,
-      };
-    } else if (layerType === LayerType.Ellipse) {
-      newLayer = {
-        type: LayerType.Ellipse,
-        x: point.x - 50,
-        y: point.y - 50,
-        width: 120,
-        height: 120,
-        fill: lastColor,
-      };
-    } else if (layerType === LayerType.Note) {
-      newLayer = {
-        type: LayerType.Note,
-        x: point.x - 60,
-        y: point.y - 60,
-        width: 140,
-        height: 140,
-        fill: { r: 254, g: 240, b: 138 }, // Sticky note yellow
-        value: "NOTE...",
-      };
-    } else {
-      newLayer = {
-        type: LayerType.Text,
-        x: point.x,
-        y: point.y - 14,
-        width: 200,
-        height: 36,
-        fill: lastColor,
-        value: "",
-        fontSize: 20,
-      };
-    }
-
-    const updatedLayers = { ...layers, [layerId]: newLayer };
-    const updatedIds = [...layerIds, layerId];
-
-    setLayers(updatedLayers);
-    setLayerIds(updatedIds);
-    setSelectedLayerIds([layerId]);
-    recordHistory(updatedLayers, updatedIds);
-    setCanvasState({ mode: CanvasMode.None });
-
-    // Schedule auto-focus for text layers
-    if (layerType === LayerType.Text) {
-      pendingFocusLayerId.current = layerId;
-    }
-  };
-
-  // Middle-click and spacebar canvas panning
-  const isMiddlePanning = useRef(false);
-  const panStart = useRef({ x: 0, y: 0, camX: 0, camY: 0 });
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    // Middle click pan (button 1)
-    if (e.button === 1 || e.buttons === 4) {
-      e.preventDefault();
-      isMiddlePanning.current = true;
-      panStart.current = { x: e.clientX, y: e.clientY, camX: camera.x, camY: camera.y };
-      return;
-    }
-
-    const point = pointerEventToCanvasPoint(e, camera, camera.zoom, containerRef.current);
-
-    if (canvasState.mode === CanvasMode.Inserting) {
-      insertLayer(canvasState.layerType, point);
-      return;
-    }
-
-    if (canvasState.mode === CanvasMode.Pencil) {
-      setPencilDraft([[point.x, point.y, e.pressure || 0.5]]);
-      return;
-    }
-
-    setCanvasState({ origin: point, mode: CanvasMode.Pressing });
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (isMiddlePanning.current) {
-      const dx = e.clientX - panStart.current.x;
-      const dy = e.clientY - panStart.current.y;
-      setCamera((prev) => ({ ...prev, x: panStart.current.camX + dx, y: panStart.current.camY + dy }));
-      isDirty.current = true;
-      return;
-    }
-
-    const current = pointerEventToCanvasPoint(e, camera, camera.zoom, containerRef.current);
-
-    if (canvasState.mode === CanvasMode.Pressing) {
-      // Start selection net
-      setCanvasState({
-        mode: CanvasMode.SelectionNet,
-        origin: canvasState.origin,
-        current,
-      });
-      return;
-    }
-
-    if (canvasState.mode === CanvasMode.SelectionNet) {
-      const intersecting = findIntersectingLayersWithRectangle(
-        layerIds,
-        layers,
-        canvasState.origin,
-        current
-      );
-      setSelectedLayerIds(intersecting);
-      setCanvasState({
-        mode: CanvasMode.SelectionNet,
-        origin: canvasState.origin,
-        current,
-      });
-      return;
-    }
-
-    if (canvasState.mode === CanvasMode.Translating) {
-      const dx = current.x - canvasState.current.x;
-      const dy = current.y - canvasState.current.y;
-
-      const updated = { ...layers };
-      for (const id of selectedLayerIds) {
-        const layer = updated[id];
-        if (layer) {
-          updated[id] = { ...layer, x: layer.x + dx, y: layer.y + dy };
-        }
+  // Insert standard layers
+  const insertLayer = useCallback(
+    (
+      layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note,
+      position: Point
+    ) => {
+      if (layerIds.length >= MAX_LAYERS) {
+        toast.error("Layer limit reached");
+        return;
       }
 
-      setLayers(updated);
-      setCanvasState({ mode: CanvasMode.Translating, current });
-      isDirty.current = true;
-      return;
-    }
+      const layerId = "layer_" + Math.random().toString(36).substring(2, 9);
+      let newLayer: Layer;
 
-    if (canvasState.mode === CanvasMode.Resizing) {
-      const bounds = resizeBounds(canvasState.initialBounds, canvasState.corner, current);
-      const updated = { ...layers };
-      for (const id of selectedLayerIds) {
-        const layer = updated[id];
-        if (layer) {
-          updated[id] = {
-            ...layer,
-            x: bounds.x,
-            y: bounds.y,
-            width: bounds.width,
-            height: bounds.height,
-          };
-        }
+      if (layerType === LayerType.Rectangle) {
+        newLayer = {
+          type: LayerType.Rectangle,
+          x: position.x - 50,
+          y: position.y - 50,
+          width: 100,
+          height: 100,
+          fill: lastUsedColor,
+        };
+      } else if (layerType === LayerType.Ellipse) {
+        newLayer = {
+          type: LayerType.Ellipse,
+          x: position.x - 50,
+          y: position.y - 50,
+          width: 100,
+          height: 100,
+          fill: lastUsedColor,
+        };
+      } else if (layerType === LayerType.Note) {
+        newLayer = {
+          type: LayerType.Note,
+          x: position.x - 50,
+          y: position.y - 50,
+          width: 100,
+          height: 100,
+          fill: { r: 255, g: 249, b: 177 }, // Sticky note yellow
+          value: "Text",
+        };
+      } else {
+        newLayer = {
+          type: LayerType.Text,
+          x: position.x - 50,
+          y: position.y - 50,
+          width: 100,
+          height: 100,
+          fill: lastUsedColor,
+          value: "Text",
+        };
       }
-      setLayers(updated);
-      isDirty.current = true;
-      return;
-    }
 
-    if (canvasState.mode === CanvasMode.Pencil) {
-      if (pencilDraft) {
-        setPencilDraft([...pencilDraft, [current.x, current.y, e.pressure || 0.5]]);
-      }
-    }
-  };
-
-  const onPointerUp = () => {
-    if (isMiddlePanning.current) {
-      isMiddlePanning.current = false;
-      return;
-    }
-
-    if (canvasState.mode === CanvasMode.Pencil && pencilDraft && pencilDraft.length > 1) {
-      const layerId = "pen_" + Math.random().toString(36).substring(2, 9);
-      const newPath = penPointsToPathLayer(pencilDraft, lastColor);
-
-      const updatedLayers = { ...layers, [layerId]: newPath };
+      const updatedLayers = { ...layers, [layerId]: newLayer };
       const updatedIds = [...layerIds, layerId];
 
       setLayers(updatedLayers);
       setLayerIds(updatedIds);
-      setPencilDraft(null);
+      setSelection([layerId]);
       recordHistory(updatedLayers, updatedIds);
+      setCanvasState({ mode: CanvasMode.None });
+    },
+    [layerIds, layers, lastUsedColor, recordHistory]
+  );
+
+  const translateSelectedLayers = useCallback(
+    (point: Point) => {
+      if (canvasState.mode !== CanvasMode.Translating) return;
+
+      const offset = {
+        x: point.x - canvasState.current.x,
+        y: point.y - canvasState.current.y,
+      };
+
+      const updated = { ...layers };
+      for (const id of selection) {
+        const layer = updated[id];
+        if (layer) {
+          updated[id] = {
+            ...layer,
+            x: layer.x + offset.x,
+            y: layer.y + offset.y,
+          };
+        }
+      }
+
+      setLayers(updated);
+      setCanvasState({ mode: CanvasMode.Translating, current: point });
+      isDirty.current = true;
+    },
+    [canvasState, layers, selection]
+  );
+
+  const unselectLayers = useCallback(() => {
+    if (selection.length > 0) {
+      setSelection([]);
+    }
+  }, [selection]);
+
+  const updateSelectionNet = useCallback(
+    (current: Point, origin: Point) => {
+      setCanvasState({
+        mode: CanvasMode.SelectionNet,
+        origin,
+        current,
+      });
+
+      const ids = findIntersectingLayersWithRectangle(
+        layerIds,
+        layers,
+        origin,
+        current
+      );
+
+      setSelection(ids);
+    },
+    [layerIds, layers]
+  );
+
+  const startMultiSelection = useCallback((current: Point, origin: Point) => {
+    if (Math.abs(current.x - origin.x) + Math.abs(current.y - origin.y) > 5) {
+      setCanvasState({
+        mode: CanvasMode.SelectionNet,
+        origin,
+        current,
+      });
+    }
+  }, []);
+
+  const continueDrawing = useCallback(
+    (point: Point, e: React.PointerEvent) => {
+      if (
+        canvasState.mode !== CanvasMode.Pencil ||
+        e.buttons !== 1 ||
+        pencilDraft == null
+      ) {
+        return;
+      }
+
+      setPencilDraft(
+        pencilDraft.length === 1 &&
+          pencilDraft[0][0] === point.x &&
+          pencilDraft[0][1] === point.y
+          ? pencilDraft
+          : [...pencilDraft, [point.x, point.y, e.pressure || 0.5]]
+      );
+    },
+    [canvasState.mode, pencilDraft]
+  );
+
+  const insertPath = useCallback(() => {
+    if (
+      pencilDraft == null ||
+      pencilDraft.length < 2 ||
+      layerIds.length >= MAX_LAYERS
+    ) {
+      setPencilDraft(null);
       return;
     }
 
-    if (canvasState.mode === CanvasMode.Translating || canvasState.mode === CanvasMode.Resizing) {
-      recordHistory(layers, layerIds);
-    }
+    const layerId = "pen_" + Math.random().toString(36).substring(2, 9);
+    const newPath = penPointsToPathLayer(pencilDraft, lastUsedColor);
 
-    // If user clicked empty canvas without dragging (Pressing → didn't become SelectionNet),
-    // clear selection
-    if (canvasState.mode === CanvasMode.Pressing) {
-      setSelectedLayerIds([]);
-    }
+    const updatedLayers = { ...layers, [layerId]: newPath };
+    const updatedIds = [...layerIds, layerId];
 
+    setLayers(updatedLayers);
+    setLayerIds(updatedIds);
     setPencilDraft(null);
-    setCanvasState({ mode: CanvasMode.None });
-  };
+    recordHistory(updatedLayers, updatedIds);
+    setCanvasState({ mode: CanvasMode.Pencil });
+  }, [pencilDraft, layerIds, layers, lastUsedColor, recordHistory]);
 
-  // Wheel zoom / pan
-  const onWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
+  const startDrawing = useCallback(
+    (point: Point, pressure: number) => {
+      setPencilDraft([[point.x, point.y, pressure]]);
+    },
+    []
+  );
+
+  const resizeSelectedLayer = useCallback(
+    (point: Point) => {
+      if (canvasState.mode !== CanvasMode.Resizing) return;
+
+      const bounds = resizeBounds(
+        canvasState.initialBounds,
+        canvasState.corner,
+        point
+      );
+
+      const targetId = selection[0];
+      if (targetId && layers[targetId]) {
+        const updated = {
+          ...layers,
+          [targetId]: {
+            ...layers[targetId],
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+          },
+        };
+        setLayers(updated);
+        isDirty.current = true;
+      }
+    },
+    [canvasState, layers, selection]
+  );
+
+  const onResizeHandlePointerDown = useCallback(
+    (corner: Side, initialBounds: XYWH) => {
+      setCanvasState({
+        mode: CanvasMode.Resizing,
+        initialBounds,
+        corner,
+      });
+    },
+    []
+  );
+
+  // Wheel Panning
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    setCamera((prev) => ({
+      x: prev.x - e.deltaX,
+      y: prev.y - e.deltaY,
+    }));
+    isDirty.current = true;
+  }, []);
+
+  // Middle-click Pan support
+  const isMiddlePanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0, camX: 0, camY: 0 });
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (isMiddlePanning.current) {
+        const dx = e.clientX - panStart.current.x;
+        const dy = e.clientY - panStart.current.y;
+        setCamera({ x: panStart.current.camX + dx, y: panStart.current.camY + dy });
+        isDirty.current = true;
+        return;
+      }
+
       e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      const newZoom = Math.min(3, Math.max(0.2, camera.zoom * zoomFactor));
-      setCamera((prev) => ({ ...prev, zoom: newZoom }));
-      isDirty.current = true;
-    } else {
-      setCamera((prev) => ({
-        ...prev,
-        x: prev.x - e.deltaX,
-        y: prev.y - e.deltaY,
-      }));
-      isDirty.current = true;
-    }
-  };
+      const current = pointerEventToCanvasPoint(e, camera, containerRef.current);
 
-  // Keyboard shortcuts (Del to delete, Ctrl+Z to undo, etc.)
+      if (canvasState.mode === CanvasMode.Pressing) {
+        startMultiSelection(current, canvasState.origin);
+      } else if (canvasState.mode === CanvasMode.SelectionNet) {
+        updateSelectionNet(current, canvasState.origin);
+      } else if (canvasState.mode === CanvasMode.Translating) {
+        translateSelectedLayers(current);
+      } else if (canvasState.mode === CanvasMode.Resizing) {
+        resizeSelectedLayer(current);
+      } else if (canvasState.mode === CanvasMode.Pencil) {
+        continueDrawing(current, e);
+      }
+    },
+    [
+      camera,
+      canvasState,
+      continueDrawing,
+      resizeSelectedLayer,
+      startMultiSelection,
+      translateSelectedLayers,
+      updateSelectionNet,
+    ]
+  );
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // Middle click pan
+      if (e.button === 1 || e.buttons === 4) {
+        e.preventDefault();
+        isMiddlePanning.current = true;
+        panStart.current = { x: e.clientX, y: e.clientY, camX: camera.x, camY: camera.y };
+        return;
+      }
+
+      const point = pointerEventToCanvasPoint(e, camera, containerRef.current);
+
+      if (canvasState.mode === CanvasMode.Inserting) {
+        return;
+      }
+
+      if (canvasState.mode === CanvasMode.Pencil) {
+        startDrawing(point, e.pressure || 0.5);
+        return;
+      }
+
+      setCanvasState({ origin: point, mode: CanvasMode.Pressing });
+    },
+    [camera, canvasState.mode, startDrawing]
+  );
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isMiddlePanning.current) {
+        isMiddlePanning.current = false;
+        return;
+      }
+
+      const point = pointerEventToCanvasPoint(e, camera, containerRef.current);
+
+      if (
+        canvasState.mode === CanvasMode.None ||
+        canvasState.mode === CanvasMode.Pressing
+      ) {
+        unselectLayers();
+        setCanvasState({
+          mode: CanvasMode.None,
+        });
+      } else if (canvasState.mode === CanvasMode.Pencil) {
+        insertPath();
+      } else if (canvasState.mode === CanvasMode.Inserting) {
+        insertLayer(canvasState.layerType, point);
+      } else {
+        if (canvasState.mode === CanvasMode.Translating || canvasState.mode === CanvasMode.Resizing) {
+          recordHistory(layers, layerIds);
+        }
+        setCanvasState({
+          mode: CanvasMode.None,
+        });
+      }
+    },
+    [camera, canvasState, insertLayer, insertPath, layers, layerIds, recordHistory, unselectLayers]
+  );
+
+  const onLayerPointerDown = useCallback(
+    (e: React.PointerEvent, layerId: string) => {
+      if (
+        canvasState.mode === CanvasMode.Pencil ||
+        canvasState.mode === CanvasMode.Inserting
+      ) {
+        return;
+      }
+
+      e.stopPropagation();
+
+      const point = pointerEventToCanvasPoint(e, camera, containerRef.current);
+
+      if (!selection.includes(layerId)) {
+        setSelection([layerId]);
+      }
+      setCanvasState({ mode: CanvasMode.Translating, current: point });
+    },
+    [camera, canvasState.mode, selection]
+  );
+
+  // Update text or note inline value
+  const updateLayerValue = useCallback(
+    (id: string, value: string) => {
+      setLayers((prev) => {
+        if (!prev[id]) return prev;
+        const updated = {
+          ...prev,
+          [id]: { ...prev[id], value },
+        };
+        isDirty.current = true;
+        return updated;
+      });
+    },
+    []
+  );
+
+  // Calculate selection bounds
+  const selectionBounds = useMemo(() => {
+    const selectedLayers = selection
+      .map((id) => layers[id])
+      .filter(Boolean);
+
+    return boundingBox(selectedLayers);
+  }, [layers, selection]);
+
+  // Contextual toolbar actions
+  const moveToFront = useCallback(() => {
+    const indices: number[] = [];
+    for (let i = 0; i < layerIds.length; i++) {
+      if (selection.includes(layerIds[i])) {
+        indices.push(i);
+      }
+    }
+
+    const filtered = layerIds.filter((id) => !selection.includes(id));
+    const newOrder = [...filtered, ...selection];
+    setLayerIds(newOrder);
+    recordHistory(layers, newOrder);
+  }, [layerIds, layers, recordHistory, selection]);
+
+  const moveToBack = useCallback(() => {
+    const filtered = layerIds.filter((id) => !selection.includes(id));
+    const newOrder = [...selection, ...filtered];
+    setLayerIds(newOrder);
+    recordHistory(layers, newOrder);
+  }, [layerIds, layers, recordHistory, selection]);
+
+  const setFill = useCallback(
+    (fill: Color) => {
+      setLastUsedColor(fill);
+      const updated = { ...layers };
+      for (const id of selection) {
+        if (updated[id]) {
+          updated[id] = { ...updated[id], fill };
+        }
+      }
+      setLayers(updated);
+      recordHistory(updated, layerIds);
+    },
+    [layerIds, layers, recordHistory, selection]
+  );
+
+  const deleteLayers = useCallback(() => {
+    const updated = { ...layers };
+    for (const id of selection) {
+      delete updated[id];
+    }
+    const newIds = layerIds.filter((id) => !selection.includes(id));
+    setLayers(updated);
+    setLayerIds(newIds);
+    setSelection([]);
+    recordHistory(updated, newIds);
+  }, [layerIds, layers, recordHistory, selection]);
+
+  // Keyboard Shortcuts (Delete, Backspace, Ctrl+Z, Ctrl+Y)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Delete" || e.key === "Backspace") {
-        const activeTag = (document.activeElement as HTMLElement)?.tagName;
-        if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+      const activeTag = (document.activeElement as HTMLElement)?.tagName;
+      if (activeTag === "INPUT" || activeTag === "TEXTAREA" || (document.activeElement as HTMLElement)?.isContentEditable) {
+        return;
+      }
 
-        if (selectedLayerIds.length > 0) {
-          const updatedLayers = { ...layers };
-          for (const id of selectedLayerIds) {
-            delete updatedLayers[id];
-          }
-          const updatedIds = layerIds.filter((id) => !selectedLayerIds.includes(id));
-          setLayers(updatedLayers);
-          setLayerIds(updatedIds);
-          setSelectedLayerIds([]);
-          recordHistory(updatedLayers, updatedIds);
-          toast.success(`Deleted ${selectedLayerIds.length} element(s)`);
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selection.length > 0) {
+          deleteLayers();
         }
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key === "z") {
         e.preventDefault();
-        undo();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
       }
 
-      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
         e.preventDefault();
         redo();
       }
@@ -437,648 +591,132 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedLayerIds, layers, layerIds, historyIndex, history]);
-
-  // Selected bounding box calculation
-  const selectionBoundingBox: XYWH | null = (() => {
-    if (selectedLayerIds.length === 0) return null;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    for (const id of selectedLayerIds) {
-      const layer = layers[id];
-      if (!layer) continue;
-      minX = Math.min(minX, layer.x);
-      minY = Math.min(minY, layer.y);
-      maxX = Math.max(maxX, layer.x + layer.width);
-      maxY = Math.max(maxY, layer.y + layer.height);
-    }
-
-    if (minX === Infinity) return null;
-    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-  })();
-
-  const updateSelectedColor = (color: Color) => {
-    setLastColor(color);
-    if (selectedLayerIds.length > 0) {
-      const updated = { ...layers };
-      for (const id of selectedLayerIds) {
-        if (updated[id]) {
-          updated[id] = { ...updated[id], fill: color };
-        }
-      }
-      setLayers(updated);
-      recordHistory(updated, layerIds);
-    }
-  };
-
-  const deleteSelected = () => {
-    if (selectedLayerIds.length === 0) return;
-    const updatedLayers = { ...layers };
-    for (const id of selectedLayerIds) {
-      delete updatedLayers[id];
-    }
-    const updatedIds = layerIds.filter((id) => !selectedLayerIds.includes(id));
-    setLayers(updatedLayers);
-    setLayerIds(updatedIds);
-    setSelectedLayerIds([]);
-    recordHistory(updatedLayers, updatedIds);
-  };
-
-  const bringToFront = () => {
-    if (selectedLayerIds.length === 0) return;
-    const filtered = layerIds.filter((id) => !selectedLayerIds.includes(id));
-    const newOrder = [...filtered, ...selectedLayerIds];
-    setLayerIds(newOrder);
-    recordHistory(layers, newOrder);
-  };
-
-  const sendToBack = () => {
-    if (selectedLayerIds.length === 0) return;
-    const filtered = layerIds.filter((id) => !selectedLayerIds.includes(id));
-    const newOrder = [...selectedLayerIds, ...filtered];
-    setLayerIds(newOrder);
-    recordHistory(layers, newOrder);
-  };
+  }, [deleteLayers, undo, redo, selection]);
 
   return (
-    <div className="relative w-full h-full bg-[#FAFAFA] dark:bg-[#09090B] overflow-hidden select-none touch-none">
-      {/* Background Dots Pattern */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40 dark:opacity-25">
+    <main
+      ref={containerRef}
+      className="h-full w-full relative bg-[#FAFAFA] dark:bg-[#09090B] touch-none overflow-hidden select-none"
+    >
+      {/* Top Navbar */}
+      <div className="absolute top-3 left-3 z-40 flex items-center gap-x-2 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-2 px-3 shadow-md rounded-none">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-x-1.5 font-mono text-xs font-semibold text-[#09090B] dark:text-white hover:text-rose-600 transition-colors p-0.5 cursor-pointer"
+          title="Back to Whiteboards"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">WHITEBOARDS</span>
+        </button>
+        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+        <span className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider truncate max-w-[200px]">
+          {whiteboard.title}
+        </span>
+        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+        <span className="font-mono text-[10px] text-[#71717A] dark:text-[#656467] uppercase tracking-wider">
+          {isSaving ? "Saving..." : "SQLite Synced"}
+        </span>
+      </div>
+
+      {/* View Reset Tool */}
+      <div className="absolute top-3 right-3 z-40 flex items-center gap-x-1 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-1.5 shadow-md rounded-none">
+        <button
+          type="button"
+          onClick={() => setCamera({ x: 0, y: 0 })}
+          className="p-1 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+          title="Reset Canvas View"
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Floating Toolbar */}
+      <Toolbar
+        canvasState={canvasState}
+        setCanvasState={setCanvasState}
+        canRedo={canRedo}
+        canUndo={canUndo}
+        undo={undo}
+        redo={redo}
+      />
+
+      {/* Floating Selection Tools */}
+      <SelectionTools
+        camera={camera}
+        selectionBounds={selectionBounds}
+        setLastUsedColor={setFill}
+        onMoveToFront={moveToFront}
+        onMoveToBack={moveToBack}
+        onDelete={deleteLayers}
+      />
+
+      {/* SVG Canvas Viewport */}
+      <svg
+        className="h-full w-full cursor-crosshair"
+        onWheel={onWheel}
+        onPointerMove={onPointerMove}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+      >
         <defs>
           <pattern
-            id="grid-dots"
-            x={camera.x % (24 * camera.zoom)}
-            y={camera.y % (24 * camera.zoom)}
-            width={24 * camera.zoom}
-            height={24 * camera.zoom}
+            id="wb-grid-dots"
+            x={camera.x % 24}
+            y={camera.y % 24}
+            width={24}
+            height={24}
             patternUnits="userSpaceOnUse"
           >
-            <circle cx="2" cy="2" r="1.5" className="fill-zinc-400 dark:fill-zinc-600" />
+            <circle cx="2" cy="2" r="1.5" className="fill-zinc-300 dark:fill-zinc-700" />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#grid-dots)" />
-      </svg>
+        <rect width="100%" height="100%" fill="url(#wb-grid-dots)" />
 
-      {/* Top Header Navbar */}
-      <div className="absolute top-3 left-3 right-3 z-40 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-x-2 pointer-events-auto bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-1.5 px-3 shadow-md rounded-none">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-x-1.5 font-mono text-xs font-semibold text-[#09090B] dark:text-white hover:text-rose-600 transition-colors p-1"
-            title="Back to Whiteboards"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">WHITEBOARDS</span>
-          </button>
-          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <span className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider truncate max-w-[200px]">
-            {whiteboard.title}
-          </span>
-          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <span className="font-mono text-[10px] text-[#71717A] dark:text-[#656467] uppercase tracking-wider">
-            {isSaving ? "Saving..." : "SQLite Synced"}
-          </span>
-        </div>
-
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-x-1 pointer-events-auto bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-1.5 shadow-md rounded-none">
-          <button
-            type="button"
-            onClick={() => setCamera((c) => ({ ...c, zoom: Math.max(0.2, c.zoom - 0.1) }))}
-            className="p-1 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white transition-colors"
-            title="Zoom Out"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <span className="font-mono text-[11px] font-bold text-[#09090B] dark:text-white w-12 text-center">
-            {Math.round(camera.zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={() => setCamera((c) => ({ ...c, zoom: Math.min(3, c.zoom + 0.1) }))}
-            className="p-1 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white transition-colors"
-            title="Zoom In"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setCamera({ x: 0, y: 0, zoom: 1 })}
-            className="p-1 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white transition-colors"
-            title="Reset Canvas View"
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Floating Brutalist Tool Palette (Left or Center) */}
-      <div
-        className="absolute top-16 left-3 z-40 flex flex-col gap-y-1.5 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-1.5 shadow-xl rounded-none"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={() => setCanvasState({ mode: CanvasMode.None })}
-          className={`p-2 transition-colors rounded-none ${
-            canvasState.mode === CanvasMode.None || canvasState.mode === CanvasMode.Translating
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-          }`}
-          title="Select / Move (V)"
-        >
-          <MousePointer className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Rectangle })
-          }
-          className={`p-2 transition-colors rounded-none ${
-            canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Rectangle
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-          }`}
-          title="Rectangle (R)"
-        >
-          <Square className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Ellipse })
-          }
-          className={`p-2 transition-colors rounded-none ${
-            canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Ellipse
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-          }`}
-          title="Ellipse (O)"
-        >
-          <Circle className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Note })
-          }
-          className={`p-2 transition-colors rounded-none ${
-            canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Note
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-          }`}
-          title="Sticky Note (N)"
-        >
-          <StickyNote className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Text })
-          }
-          className={`p-2 transition-colors rounded-none ${
-            canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Text
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-          }`}
-          title="Text Label (T)"
-        >
-          <Type className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setCanvasState({ mode: CanvasMode.Pencil })}
-          className={`p-2 transition-colors rounded-none ${
-            canvasState.mode === CanvasMode.Pencil
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-          }`}
-          title="Freehand Pencil (P)"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-
-        <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
-
-        <button
-          type="button"
-          onClick={undo}
-          disabled={historyIndex <= 0}
-          className="p-2 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B] disabled:opacity-30 transition-colors rounded-none"
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo2 className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={redo}
-          disabled={historyIndex >= history.length - 1}
-          className="p-2 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B] disabled:opacity-30 transition-colors rounded-none"
-          title="Redo (Ctrl+Y)"
-        >
-          <Redo2 className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Contextual Properties Bar for Selected Elements */}
-      {selectedLayerIds.length > 0 && selectionBoundingBox && (
-        <div
-          className="absolute z-50 flex items-center gap-x-2 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-2 shadow-2xl rounded-none pointer-events-auto"
+        <g
           style={{
-            transform: `translate(${Math.max(80, selectionBoundingBox.x * camera.zoom + camera.x)}px, ${Math.max(70, (selectionBoundingBox.y - 50) * camera.zoom + camera.y)}px)`,
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-          onPointerUp={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Color Palette */}
-          <div className="flex items-center gap-x-1 border-r border-zinc-200 dark:border-zinc-800 pr-2">
-            {PRESET_COLORS.map((col, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => updateSelectedColor(col)}
-                className="w-5 h-5 rounded-none border border-black/20 dark:border-white/20 transition-transform hover:scale-110"
-                style={{ backgroundColor: colorToCss(col) }}
-              />
-            ))}
-          </div>
-
-          {/* Font Size Controls — for Text and Note layers */}
-          {selectedLayerIds.length === 1 && (layers[selectedLayerIds[0]]?.type === LayerType.Text || layers[selectedLayerIds[0]]?.type === LayerType.Note) && (
-            <div className="flex items-center gap-x-1 border-r border-zinc-200 dark:border-zinc-800 pr-2">
-              <span className="font-mono text-[10px] text-[#71717A] dark:text-[#656467] uppercase mr-1">Size</span>
-              {FONT_SIZES.map((size) => {
-                const selectedLayer = layers[selectedLayerIds[0]];
-                const currentSize = selectedLayer && 'fontSize' in selectedLayer ? (selectedLayer as any).fontSize || 20 : 20;
-                return (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => {
-                      const updated = { ...layers };
-                      const id = selectedLayerIds[0];
-                      if (updated[id]) {
-                        const layer = updated[id];
-                        if (layer.type === LayerType.Text) {
-                          // Auto-size the text layer to fit the new font size
-                          const textLen = (layer.value || "").length || 5;
-                          const newWidth = Math.max(200, textLen * size * 0.7);
-                          const newHeight = Math.max(size * 1.8, 36);
-                          updated[id] = { ...layer, fontSize: size, width: newWidth, height: newHeight } as Layer;
-                        } else if (layer.type === LayerType.Note) {
-                          updated[id] = { ...layer, fontSize: size } as Layer;
-                        }
-                      }
-                      setLayers(updated);
-                      recordHistory(updated, layerIds);
-                    }}
-                    className={`px-1.5 py-0.5 font-mono text-[10px] rounded-none transition-colors ${
-                      currentSize === size
-                        ? "bg-black dark:bg-white text-white dark:text-black font-bold"
-                        : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#18181B]"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Layer Ordering */}
-          <button
-            type="button"
-            onClick={bringToFront}
-            className="p-1.5 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white transition-colors"
-            title="Bring to Front"
-          >
-            <BringToFront className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={sendToBack}
-            className="p-1.5 text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white transition-colors"
-            title="Send to Back"
-          >
-            <SendToBack className="h-4 w-4" />
-          </button>
-
-          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
-
-          {/* Delete */}
-          <button
-            type="button"
-            onClick={deleteSelected}
-            className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-            title="Delete (Del)"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Interactive Canvas Viewport */}
-      <div
-        ref={containerRef}
-        className="w-full h-full cursor-crosshair overflow-hidden"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onWheel={onWheel}
-      >
-        <svg
-          className="w-full h-full"
-          style={{
-            transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
-            transformOrigin: "0 0",
+            transform: `translate(${camera.x}px, ${camera.y}px)`,
           }}
         >
-          {/* Render Layers in Order */}
-          {layerIds.map((layerId) => {
-            const layer = layers[layerId];
-            if (!layer) return null;
-            const isSelected = selectedLayerIds.includes(layerId);
-
-            const handleLayerPointerDown = (e: React.PointerEvent) => {
-              if (canvasState.mode === CanvasMode.Inserting || canvasState.mode === CanvasMode.Pencil) return;
-              e.stopPropagation();
-              const point = pointerEventToCanvasPoint(e, camera, camera.zoom, containerRef.current);
-
-              if (e.shiftKey) {
-                setSelectedLayerIds((prev) =>
-                  prev.includes(layerId) ? prev.filter((id) => id !== layerId) : [...prev, layerId]
-                );
-              } else if (!isSelected) {
-                setSelectedLayerIds([layerId]);
-              }
-
-              setCanvasState({ mode: CanvasMode.Translating, current: point });
-            };
-
-            if (layer.type === LayerType.Rectangle) {
-              return (
-                <rect
-                  key={layerId}
-                  x={layer.x}
-                  y={layer.y}
-                  width={layer.width}
-                  height={layer.height}
-                  fill={colorToCss(layer.fill)}
-                  stroke={isSelected ? "#2563EB" : "#27272A"}
-                  strokeWidth={isSelected ? 2 / camera.zoom : 1}
-                  onPointerDown={handleLayerPointerDown}
-                  className="cursor-pointer transition-shadow"
-                />
-              );
-            }
-
-            if (layer.type === LayerType.Ellipse) {
-              return (
-                <ellipse
-                  key={layerId}
-                  cx={layer.x + layer.width / 2}
-                  cy={layer.y + layer.height / 2}
-                  rx={layer.width / 2}
-                  ry={layer.height / 2}
-                  fill={colorToCss(layer.fill)}
-                  stroke={isSelected ? "#2563EB" : "#27272A"}
-                  strokeWidth={isSelected ? 2 / camera.zoom : 1}
-                  onPointerDown={handleLayerPointerDown}
-                  className="cursor-pointer"
-                />
-              );
-            }
-
-            if (layer.type === LayerType.Note) {
-              const noteFontSize = layer.fontSize || 13;
-              return (
-                <g
-                  key={layerId}
-                  transform={`translate(${layer.x}, ${layer.y})`}
-                  onPointerDown={handleLayerPointerDown}
-                  className="cursor-pointer"
-                >
-                  <rect
-                    width={layer.width}
-                    height={layer.height}
-                    fill={colorToCss(layer.fill)}
-                    stroke={isSelected ? "#2563EB" : "rgba(0,0,0,0.15)"}
-                    strokeWidth={isSelected ? 2 / camera.zoom : 1}
-                    className="drop-shadow-md"
-                  />
-                  <foreignObject width={layer.width} height={layer.height}>
-                    <div
-                      style={{ backgroundColor: colorToCss(layer.fill), width: "100%", height: "100%" }}
-                    >
-                      <textarea
-                        value={layer.value || ""}
-                        onChange={(e) => {
-                          const updated = {
-                            ...layers,
-                            [layerId]: { ...layer, value: e.target.value },
-                          };
-                          setLayers(updated);
-                          isDirty.current = true;
-                        }}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        placeholder="Type note..."
-                        style={{
-                          color: getContrastingTextColor(layer.fill),
-                          backgroundColor: "transparent",
-                          outline: "none",
-                          border: "none",
-                          resize: "none",
-                          width: "100%",
-                          height: "100%",
-                          padding: "10px 12px",
-                          fontFamily: "system-ui, -apple-system, sans-serif",
-                          fontSize: `${noteFontSize}px`,
-                          fontWeight: 600,
-                          lineHeight: "1.4",
-                        }}
-                      />
-                    </div>
-                  </foreignObject>
-                </g>
-              );
-            }
-
-            if (layer.type === LayerType.Text) {
-              const fontSize = layer.fontSize || 20;
-              const textLen = (layer.value || "").length || 5;
-              const dynWidth = Math.max(layer.width, textLen * fontSize * 0.65 + 20);
-              const dynHeight = Math.max(layer.height, fontSize * 1.6 + 10);
-              return (
-                <g
-                  key={layerId}
-                  data-layer-id={layerId}
-                  transform={`translate(${layer.x}, ${layer.y})`}
-                  onPointerDown={handleLayerPointerDown}
-                  className="cursor-pointer"
-                >
-                  <foreignObject
-                    width={dynWidth}
-                    height={dynHeight}
-                    style={{ overflow: "visible" }}
-                  >
-                    <textarea
-                      value={layer.value || ""}
-                      onChange={(e) => {
-                        const textVal = e.target.value;
-                        const newW = Math.max(200, textVal.length * fontSize * 0.65 + 20);
-                        const newH = Math.max(36, fontSize * 1.6 + 10);
-                        const updated = {
-                          ...layers,
-                          [layerId]: { ...layer, value: textVal, width: newW, height: newH },
-                        };
-                        setLayers(updated);
-                        isDirty.current = true;
-                      }}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      placeholder="Type here..."
-                      style={{
-                        color: colorToCss(layer.fill),
-                        backgroundColor: "transparent",
-                        outline: "none",
-                        border: "none",
-                        resize: "none",
-                        fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                        fontSize: `${fontSize}px`,
-                        fontWeight: 700,
-                        letterSpacing: "0.05em",
-                        width: `${dynWidth}px`,
-                        minHeight: `${dynHeight}px`,
-                        padding: "4px 2px",
-                        lineHeight: "1.3",
-                        caretColor: colorToCss(layer.fill),
-                        direction: "ltr",
-                        textAlign: "left",
-                      }}
-                    />
-                  </foreignObject>
-                </g>
-              );
-            }
-
-            if (layer.type === LayerType.Path) {
-              const stroke = getStroke(layer.points, {
-                size: 10,
-                thinning: 0.5,
-                smoothing: 0.5,
-                streamline: 0.5,
-              });
-              const pathData = getSvgPathFromStroke(stroke);
-
-              return (
-                <path
-                  key={layerId}
-                  d={pathData}
-                  transform={`translate(${layer.x}, ${layer.y})`}
-                  fill={colorToCss(layer.fill)}
-                  stroke={isSelected ? "#2563EB" : "transparent"}
-                  strokeWidth={isSelected ? 2 / camera.zoom : 0}
-                  onPointerDown={handleLayerPointerDown}
-                  className="cursor-pointer"
-                />
-              );
-            }
-
-            return null;
-          })}
-
-          {/* Active Pencil Draft */}
-          {pencilDraft && (
-            <path
-              d={getSvgPathFromStroke(
-                getStroke(pencilDraft, {
-                  size: 10,
-                  thinning: 0.5,
-                  smoothing: 0.5,
-                  streamline: 0.5,
-                })
-              )}
-              fill={colorToCss(lastColor)}
+          {layerIds.map((layerId) => (
+            <LayerPreview
+              key={layerId}
+              id={layerId}
+              layer={layers[layerId]}
+              onLayerPointerDown={onLayerPointerDown}
+              onValueChange={updateLayerValue}
+              selectionColor={selection.includes(layerId) ? "#3b82f6" : undefined}
             />
-          )}
+          ))}
 
-          {/* Selection Box & Resize Handles */}
-          {selectionBoundingBox && (
-            <g>
-              <rect
-                x={selectionBoundingBox.x}
-                y={selectionBoundingBox.y}
-                width={selectionBoundingBox.width}
-                height={selectionBoundingBox.height}
-                fill="none"
-                stroke="#2563EB"
-                strokeWidth={1.5 / camera.zoom}
-                strokeDasharray="4 4"
-                className="pointer-events-none"
-              />
+          <SelectionBox
+            onResizeHandlePointerDown={onResizeHandlePointerDown}
+            bounds={selectionBounds}
+            isShowingHandles={canvasState.mode !== CanvasMode.Translating && selection.length === 1}
+          />
 
-              {/* 8 Resize Handles */}
-              {[
-                { corner: Side.Top + Side.Left, x: selectionBoundingBox.x, y: selectionBoundingBox.y, cursor: "nwse-resize" },
-                { corner: Side.Top, x: selectionBoundingBox.x + selectionBoundingBox.width / 2, y: selectionBoundingBox.y, cursor: "ns-resize" },
-                { corner: Side.Top + Side.Right, x: selectionBoundingBox.x + selectionBoundingBox.width, y: selectionBoundingBox.y, cursor: "nesw-resize" },
-                { corner: Side.Right, x: selectionBoundingBox.x + selectionBoundingBox.width, y: selectionBoundingBox.y + selectionBoundingBox.height / 2, cursor: "ew-resize" },
-                { corner: Side.Bottom + Side.Right, x: selectionBoundingBox.x + selectionBoundingBox.width, y: selectionBoundingBox.y + selectionBoundingBox.height, cursor: "nwse-resize" },
-                { corner: Side.Bottom, x: selectionBoundingBox.x + selectionBoundingBox.width / 2, y: selectionBoundingBox.y + selectionBoundingBox.height, cursor: "ns-resize" },
-                { corner: Side.Bottom + Side.Left, x: selectionBoundingBox.x, y: selectionBoundingBox.y + selectionBoundingBox.height, cursor: "nesw-resize" },
-                { corner: Side.Left, x: selectionBoundingBox.x, y: selectionBoundingBox.y + selectionBoundingBox.height / 2, cursor: "ew-resize" },
-              ].map((h, i) => {
-                const handleSize = 8 / camera.zoom;
-                return (
-                  <rect
-                    key={i}
-                    x={h.x - handleSize / 2}
-                    y={h.y - handleSize / 2}
-                    width={handleSize}
-                    height={handleSize}
-                    fill="#FFFFFF"
-                    stroke="#2563EB"
-                    strokeWidth={1.5 / camera.zoom}
-                    style={{ cursor: h.cursor }}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      setCanvasState({
-                        mode: CanvasMode.Resizing,
-                        initialBounds: selectionBoundingBox,
-                        corner: h.corner,
-                      });
-                    }}
-                  />
-                );
-              })}
-            </g>
-          )}
-
-          {/* Marquee Selection Net */}
-          {canvasState.mode === CanvasMode.SelectionNet && canvasState.current && (
+          {/* Selection Net Box */}
+          {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && (
             <rect
+              className="fill-blue-500/10 stroke-blue-500 stroke-1"
               x={Math.min(canvasState.origin.x, canvasState.current.x)}
               y={Math.min(canvasState.origin.y, canvasState.current.y)}
               width={Math.abs(canvasState.origin.x - canvasState.current.x)}
               height={Math.abs(canvasState.origin.y - canvasState.current.y)}
-              fill="rgba(37, 99, 235, 0.15)"
-              stroke="#2563EB"
-              strokeWidth={1 / camera.zoom}
-              className="pointer-events-none"
             />
           )}
-        </svg>
-      </div>
-    </div>
+
+          {/* Active Freehand Pencil Draft */}
+          {pencilDraft != null && pencilDraft.length > 0 && (
+            <Path
+              points={pencilDraft}
+              fill={colorToCss(lastUsedColor)}
+              x={0}
+              y={0}
+            />
+          )}
+        </g>
+      </svg>
+    </main>
   );
 };

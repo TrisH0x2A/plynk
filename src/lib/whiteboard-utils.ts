@@ -26,7 +26,6 @@ export function hexToRgb(hex: string): Color {
 export function pointerEventToCanvasPoint(
   e: React.PointerEvent,
   camera: Camera,
-  zoom: number = 1,
   containerEl?: HTMLElement | null
 ): Point {
   let offsetX = 0;
@@ -39,8 +38,8 @@ export function pointerEventToCanvasPoint(
   }
 
   return {
-    x: Math.round((e.clientX - offsetX - camera.x) / zoom),
-    y: Math.round((e.clientY - offsetY - camera.y) / zoom),
+    x: Math.round(e.clientX - offsetX) - camera.x,
+    y: Math.round(e.clientY - offsetY) - camera.y,
   };
 }
 
@@ -115,7 +114,7 @@ export function findIntersectingLayersWithRectangle(
 
 export function getContrastingTextColor(color: Color): string {
   const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-  return luminance > 160 ? "#09090B" : "#FFFFFF";
+  return luminance > 182 ? "#000000" : "#FFFFFF";
 }
 
 export function penPointsToPathLayer(
@@ -147,84 +146,54 @@ export function penPointsToPathLayer(
     if (bottom < y) bottom = y;
   }
 
-  const width = Math.max(10, right - left);
-  const height = Math.max(10, bottom - top);
-
   return {
     type: LayerType.Path,
     x: left,
     y: top,
-    width,
-    height,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
     fill: color,
     points: points.map(([x, y, pressure]) => [x - left, y - top, pressure ?? 0.5]),
   };
 }
 
-/**
- * Generates smooth SVG stroke string from stroke coordinates.
- */
 export function getSvgPathFromStroke(stroke: number[][]): string {
   if (!stroke.length) return "";
 
-  const d: (string | number)[] = ["M", ...stroke[0], "Q"];
-
-  for (let i = 0; i < stroke.length; i++) {
-    const [x0, y0] = stroke[i];
-    const [x1, y1] = stroke[(i + 1) % stroke.length];
-    d.push(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
-  }
+  const d = stroke.reduce(
+    (acc, [x0, y0], i, arr) => {
+      const [x1, y1] = arr[(i + 1) % arr.length];
+      acc.push(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+      return acc;
+    },
+    ["M", ...stroke[0], "Q"] as (string | number)[]
+  );
 
   d.push("Z");
   return d.join(" ");
 }
 
-/**
- * Built-in smooth outline generator for freehand paths.
- * Generates smooth left and right polygon contours around input points with pressure.
- */
-export function getStrokePoints(
-  points: number[][],
-  options: { size?: number; thinning?: number; smoothing?: number } = {}
-): number[][] {
-  if (points.length === 0) return [];
-  if (points.length === 1) {
-    const [x, y] = points[0];
-    const r = (options.size || 8) / 2;
-    return [
-      [x - r, y - r],
-      [x + r, y - r],
-      [x + r, y + r],
-      [x - r, y + r],
-    ];
+export const boundingBox = (layers: Layer[]): XYWH | null => {
+  const first = layers[0];
+  if (!first) return null;
+
+  let left = first.x;
+  let right = first.x + first.width;
+  let top = first.y;
+  let bottom = first.y + first.height;
+
+  for (let i = 1; i < layers.length; i++) {
+    const { x, y, width, height } = layers[i];
+    if (left > x) left = x;
+    if (right < x + width) right = x + width;
+    if (top > y) top = y;
+    if (bottom < y + height) bottom = y + height;
   }
 
-  const size = options.size ?? 8;
-  const leftPts: number[][] = [];
-  const rightPts: number[][] = [];
-
-  for (let i = 0; i < points.length; i++) {
-    const [x, y, pressure = 0.5] = points[i];
-    const width = Math.max(2, size * (pressure + 0.3));
-
-    let dx = 0;
-    let dy = 0;
-
-    if (i < points.length - 1) {
-      dx = points[i + 1][0] - x;
-      dy = points[i + 1][1] - y;
-    } else {
-      dx = x - points[i - 1][0];
-      dy = y - points[i - 1][1];
-    }
-
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-
-    leftPts.push([x + (nx * width) / 2, y + (ny * width) / 2]);
-    rightPts.push([x - (nx * width) / 2, y - (ny * width) / 2]);
-  }
-
-  return [...leftPts, ...rightPts.reverse()];
-}
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  };
+};
