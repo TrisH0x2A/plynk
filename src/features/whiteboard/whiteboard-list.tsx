@@ -1,14 +1,19 @@
-import { useState } from "react";
-import { Plus, PlusCircle, MoreHorizontal, Edit3, Trash2, X, PenTool } from "lucide-react";
-import { toast } from "sonner";
+import React, { useState } from "react";
+import { Plus, MoreHorizontal, PlusCircle, Trash2, Edit3, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-
+import { toast } from "sonner";
 import { Whiteboard } from "@/types/whiteboard";
 import { tauriApi } from "@/lib/tauri";
+import { Skeleton } from "@/components/ui/skeleton";
+import { WhiteboardFormPopover } from "./whiteboard-form-popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverClose,
+} from "@/components/ui/popover";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface WhiteboardListProps {
   whiteboards: Whiteboard[];
@@ -26,38 +31,12 @@ export const WhiteboardList = ({
   isLoading = false,
 }: WhiteboardListProps) => {
   const queryClient = useQueryClient();
-
-  // Create Whiteboard Dialog state
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-
-  // Rename Whiteboard Dialog state
   const [wbToRename, setWbToRename] = useState<Whiteboard | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newTitle.trim();
-    if (!trimmed) {
-      toast.error("Title cannot be empty");
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-      const created = await tauriApi.createWhiteboard(workspaceId, trimmed);
-      queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", workspaceId] });
-      toast.success(`Created "${trimmed}"`);
-      setNewTitle("");
-      setIsCreateOpen(false);
-      onSelectWhiteboard(created.id);
-    } catch (error) {
-      toast.error(String(error));
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  if (isLoading) {
+    return <WhiteboardList.Skeleton />;
+  }
 
   const openRenameModal = (e: React.MouseEvent, wb: Whiteboard) => {
     e.stopPropagation();
@@ -67,20 +46,15 @@ export const WhiteboardList = ({
 
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wbToRename) return;
-    const trimmed = renameTitle.trim();
-    if (!trimmed) {
-      toast.error("Title cannot be empty");
-      return;
-    }
+    if (!wbToRename || !renameTitle.trim()) return;
 
     try {
-      await tauriApi.updateWhiteboard(wbToRename.id, trimmed);
+      await tauriApi.updateWhiteboard(wbToRename.id, renameTitle.trim());
+      toast.success(`Renamed to "${renameTitle.trim()}"`);
       queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", workspaceId] });
-      toast.success(`Renamed to "${trimmed}"`);
       setWbToRename(null);
-    } catch (error) {
-      toast.error(String(error));
+    } catch (err) {
+      toast.error(String(err));
     }
   };
 
@@ -93,76 +67,24 @@ export const WhiteboardList = ({
       queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", workspaceId] });
       queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
       toast.success(`Moved "${wb.title}" to Recycle Bin`);
-    } catch (error) {
-      toast.error(String(error));
+    } catch (err) {
+      toast.error(String(err));
     }
   };
 
-  if (isLoading) {
-    return <WhiteboardList.Skeleton />;
-  }
-
   return (
     <div className="space-y-6">
-      {/* Create Whiteboard Modal Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white max-w-md rounded-none shadow-2xl p-6">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E4E4E7] dark:border-[#27272A] mb-4">
-            <div className="flex items-center gap-x-2">
-              <PenTool className="h-4 w-4 text-[#09090B] dark:text-white" />
-              <h3 className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider">
-                <span className="dark:hidden">Initialize New Whiteboard</span>
-                <span className="hidden dark:inline">Initialize New Blackboard</span>
-              </h3>
-            </div>
-          </div>
-
-          <form onSubmit={handleCreateSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="font-mono text-[11px] uppercase font-semibold text-[#71717A] dark:text-[#656467] tracking-wider block">
-                <span className="dark:hidden">Whiteboard Title</span>
-                <span className="hidden dark:inline">Blackboard Title</span>
-              </label>
-              <Input
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="ENTER TITLE (E.G. ARCHITECTURE SPRINT)..."
-                autoFocus
-                className="bg-zinc-50 dark:bg-black border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white font-sans text-xs px-3 py-2.5 rounded-none focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0 placeholder:text-[#71717A] dark:placeholder:text-[#656467]"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-x-2 pt-2 border-t border-[#E4E4E7] dark:border-[#18181B]">
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                className="px-4 py-2 bg-zinc-100 dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white font-mono text-xs uppercase transition-colors rounded-none cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isCreating}
-                className="px-5 py-2 bg-black dark:bg-white text-white dark:text-black font-mono text-xs uppercase font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors rounded-none cursor-pointer"
-              >
-                {isCreating ? "Initializing..." : "Create Canvas"}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rename Whiteboard Modal Dialog */}
+      {/* Rename Dialog */}
       <Dialog open={!!wbToRename} onOpenChange={() => setWbToRename(null)}>
         <DialogContent className="bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white max-w-md rounded-none shadow-2xl p-6">
           <div className="flex items-center justify-between pb-3 border-b border-[#E4E4E7] dark:border-[#27272A] mb-4">
-            <div className="flex items-center gap-x-2">
-              <Edit3 className="h-4 w-4 text-[#09090B] dark:text-white" />
-              <h3 className="font-mono text-xs font-bold text-[#09090B] dark:text-white uppercase tracking-wider">
+            <span className="font-mono text-xs uppercase font-bold text-[#09090B] dark:text-white tracking-wider flex items-center gap-x-2">
+              <Edit3 className="h-4 w-4" />
+              <span>
                 <span className="dark:hidden">Rename Whiteboard</span>
                 <span className="hidden dark:inline">Rename Blackboard</span>
-              </h3>
-            </div>
+              </span>
+            </span>
           </div>
 
           <form onSubmit={handleRenameSubmit} className="space-y-4">
@@ -172,25 +94,28 @@ export const WhiteboardList = ({
                 <span className="hidden dark:inline">Blackboard Title</span>
               </label>
               <Input
+                id="rename-title"
+                name="title"
+                type="text"
                 value={renameTitle}
                 onChange={(e) => setRenameTitle(e.target.value)}
                 placeholder="ENTER TITLE..."
                 autoFocus
-                className="bg-zinc-50 dark:bg-black border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white font-sans text-xs px-3 py-2.5 rounded-none focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0 placeholder:text-[#71717A] dark:placeholder:text-[#656467]"
+                className="bg-white dark:bg-black border border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white font-sans text-xs px-3 py-2 rounded-none focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0 placeholder:text-[#71717A] dark:placeholder:text-[#656467] uppercase font-medium"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-x-2 pt-2 border-t border-[#E4E4E7] dark:border-[#18181B]">
+            <div className="flex justify-end gap-x-2 pt-2 border-t border-[#E4E4E7] dark:border-[#27272A]">
               <button
                 type="button"
                 onClick={() => setWbToRename(null)}
-                className="px-4 py-2 bg-zinc-100 dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white font-mono text-xs uppercase transition-colors rounded-none cursor-pointer"
+                className="px-4 py-2 border border-[#E4E4E7] dark:border-[#27272A] text-[#71717A] dark:text-[#656467] font-mono text-xs uppercase hover:bg-zinc-100 dark:hover:bg-[#18181B] hover:text-black dark:hover:text-white transition-colors cursor-pointer rounded-none"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-black dark:bg-white text-white dark:text-black font-mono text-xs uppercase font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors rounded-none cursor-pointer"
+                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black font-mono text-xs uppercase font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer rounded-none"
               >
                 Save Changes
               </button>
@@ -199,7 +124,7 @@ export const WhiteboardList = ({
         </DialogContent>
       </Dialog>
 
-      {/* Header Section matching Boards Overview */}
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-y-4 pb-4 border-b border-[#E4E4E7] dark:border-[#27272A]">
         <div>
           <h2 className="font-sans text-4xl font-bold text-[#09090B] dark:text-white tracking-tighter">
@@ -207,26 +132,33 @@ export const WhiteboardList = ({
             <span className="hidden dark:inline">Your Blackboards</span>
           </h2>
           <p className="font-mono text-xs text-[#71717A] dark:text-[#656467] uppercase tracking-wider mt-1">
-            Active Canvas Workspace
+            Active Projects Workspace
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsCreateOpen(true)}
-          className="bg-black dark:bg-white text-white dark:text-black font-mono text-xs uppercase px-5 py-2.5 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-x-2 font-semibold cursor-pointer rounded-none"
+        <WhiteboardFormPopover
+          workspaceId={workspaceId}
+          onWhiteboardCreated={onSelectWhiteboard}
+          side="bottom"
+          align="end"
         >
-          <Plus className="h-4 w-4" />
-          <span className="dark:hidden">Create Whiteboard</span>
-          <span className="hidden dark:inline">Create Blackboard</span>
-        </button>
+          <button
+            type="button"
+            className="bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase px-5 py-2.5 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors duration-200 flex items-center gap-x-2 font-semibold cursor-pointer rounded-none"
+          >
+            <Plus className="h-4 w-4" />
+            <span>
+              <span className="dark:hidden">Create Whiteboard</span>
+              <span className="hidden dark:inline">Create Blackboard</span>
+            </span>
+          </button>
+        </WhiteboardFormPopover>
       </div>
 
-      {/* Boards Grid matching Boards Overview */}
+      {/* Boards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {whiteboards.map((wb, idx) => {
           const formattedId = `ID-${(idx + 1).toString().padStart(3, "0")}`;
-
           return (
             <div
               key={wb.id}
@@ -320,17 +252,23 @@ export const WhiteboardList = ({
         })}
 
         {/* Initialize New Board Tile */}
-        <div
-          role="button"
-          onClick={() => setIsCreateOpen(true)}
-          className="bg-transparent border border-dashed border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-white transition-colors duration-200 p-6 flex flex-col items-center justify-center h-64 group cursor-pointer text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white select-none"
+        <WhiteboardFormPopover
+          workspaceId={workspaceId}
+          onWhiteboardCreated={onSelectWhiteboard}
+          side="right"
+          sideOffset={10}
         >
-          <PlusCircle className="h-10 w-10 mb-3 group-hover:scale-110 transition-transform text-[#71717A] dark:text-[#656467] group-hover:text-black dark:group-hover:text-white" />
-          <span className="font-mono text-xs uppercase tracking-wider font-semibold">
-            <span className="dark:hidden">Initialize New Whiteboard</span>
-            <span className="hidden dark:inline">Initialize New Blackboard</span>
-          </span>
-        </div>
+          <div
+            role="button"
+            className="bg-transparent border border-dashed border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-white transition-colors duration-200 p-6 flex flex-col items-center justify-center h-64 group cursor-pointer text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white rounded-none"
+          >
+            <PlusCircle className="h-10 w-10 mb-3 group-hover:scale-110 transition-transform text-[#71717A] dark:text-[#656467] group-hover:text-black dark:group-hover:text-white" />
+            <span className="font-mono text-xs uppercase tracking-wider font-semibold">
+              <span className="dark:hidden">Initialize New Whiteboard</span>
+              <span className="hidden dark:inline">Initialize New Blackboard</span>
+            </span>
+          </div>
+        </WhiteboardFormPopover>
       </div>
     </div>
   );
