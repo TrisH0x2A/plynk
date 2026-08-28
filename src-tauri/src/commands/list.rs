@@ -31,9 +31,9 @@ pub fn update_list(state: State<'_, AppState>, id: String, title: String) -> App
 }
 
 #[tauri::command]
-pub fn delete_list(state: State<'_, AppState>, id: String) -> AppResult<()> {
+pub fn delete_list(state: State<'_, AppState>, id: String, user_name: Option<String>) -> AppResult<()> {
     let conn = state.db.lock().unwrap();
-    list_service::delete_list(&conn, &id)
+    list_service::delete_list(&conn, &id, user_name)
 }
 
 #[tauri::command]
