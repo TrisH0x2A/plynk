@@ -8,12 +8,12 @@ import { Sidebar } from "@/features/dashboard/sidebar";
 import { BoardList } from "@/features/dashboard/board-list";
 import { ActivityView } from "@/features/dashboard/activity-view";
 import { SettingsView } from "@/features/dashboard/settings-view";
+import { AppSettingsView } from "@/features/dashboard/app-settings-view";
 import { BackupView } from "@/features/dashboard/backup-view";
 import { BoardNavbar } from "@/features/board/board-navbar";
 import { ListContainer } from "@/features/board/list-container";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import { OnboardingModal } from "@/components/modals/onboarding-modal";
-import { AppSettingsModal } from "@/components/modals/app-settings-modal";
 import { WorkspaceModal } from "@/components/modals/workspace-modal";
 
 export const App = () => {
@@ -44,7 +44,6 @@ export const App = () => {
   // Onboarding state
   const [userName, setUserName] = useState<string>("SYS_ADMIN");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
-  const [isAppSettingsOpen, setIsAppSettingsOpen] = useState<boolean>(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -151,15 +150,6 @@ export const App = () => {
       <ModalProvider activeBoardId={activeBoardId || ""} />
       
       {/* Onboarding Pop-up for New Users */}
-      <AppSettingsModal
-        isOpen={isAppSettingsOpen}
-        onClose={() => setIsAppSettingsOpen(false)}
-        userName={userName}
-        onUpdateUserName={(name) => {
-          localStorage.setItem("plynk_user_name", name);
-          setUserName(name);
-        }}
-      />
       <OnboardingModal
         isOpen={isOnboardingOpen}
         theme={theme}
@@ -177,7 +167,6 @@ export const App = () => {
         userName={userName}
         theme={theme}
         onToggleTheme={setTheme}
-        onOpenAppSettings={() => setIsAppSettingsOpen(true)}
         workspaces={workspaces || []}
         activeWorkspaceId={activeWorkspaceId}
         activeView={activeView}

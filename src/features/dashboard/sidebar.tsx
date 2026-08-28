@@ -14,7 +14,6 @@ interface SidebarProps {
   activeWorkspaceId: string;
   activeView: string;
   isLoading?: boolean;
-  onOpenAppSettings?: () => void;
   onSelectWorkspace: (id: string) => void;
   onSelectView: (view: string) => void;
   onCreateWorkspace: () => void;
@@ -29,7 +28,6 @@ export const Sidebar = ({
   activeWorkspaceId,
   activeView,
   isLoading = false,
-  onOpenAppSettings,
   onSelectWorkspace,
   onSelectView,
   onCreateWorkspace,
@@ -186,7 +184,7 @@ export const Sidebar = ({
           {/* Animated Settings Icon Button */}
           <button
             type="button"
-            onClick={() => onOpenAppSettings?.()}
+            onClick={() => onSelectView("app-settings")}
             className={`h-8 w-8 flex items-center justify-center bg-white dark:bg-[#09090B] border ${
               activeView === "settings"
                 ? "border-black dark:border-white text-black dark:text-white font-bold shadow-sm"
@@ -213,7 +211,7 @@ export const Sidebar = ({
         </div>
 
         {/* User Card */}
-        <div onClick={() => onOpenAppSettings?.()} className="flex items-center gap-x-3 p-2 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-[#A1A1AA] transition-colors rounded-none cursor-pointer">
+        <div onClick={() => onSelectView("app-settings")} className="flex items-center gap-x-3 p-2 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-[#A1A1AA] transition-colors rounded-none cursor-pointer">
           <Avatar className="h-7 w-7 rounded-none border border-[#E4E4E7] dark:border-[#27272A]">
             <AvatarFallback className="bg-black text-white dark:bg-[#353437] dark:text-white font-mono text-xs uppercase rounded-none font-bold">
               {initial}
