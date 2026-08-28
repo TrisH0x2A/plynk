@@ -153,32 +153,46 @@ export const Sidebar = ({
       {/* Footer Section: Theme Toggler & User Profile */}
       <div className="px-6 mt-auto border-t border-[#E4E4E7] dark:border-[#27272A] pt-4 space-y-3">
         {/* Single Combined Row: [Theme Switcher] | [Github Icon | Counter | Star Icon] */}
-        <div className="flex items-center gap-x-2 w-full">
+        <div className="flex items-center gap-x-1.5 w-full">
           {/* Animated Smooth Theme Switcher */}
           <button
             type="button"
             onClick={() => onToggleTheme?.(theme === "dark" ? "light" : "dark")}
-            className="relative w-16 h-8 bg-[#F4F4F5] dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] p-0.5 flex items-center cursor-pointer select-none shrink-0 group rounded-none"
+            className="relative w-14 h-8 bg-[#F4F4F5] dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] p-0.5 flex items-center cursor-pointer select-none shrink-0 group rounded-none"
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {/* Background Track Icons */}
-            <div className="w-full flex items-center justify-between px-1.5 text-[#71717A] dark:text-[#656467]">
-              <Moon className="h-3 w-3" />
-              <Sun className="h-3 w-3" />
+            <div className="w-full flex items-center justify-between px-1 text-[#71717A] dark:text-[#656467]">
+              <Moon className="h-2.5 w-2.5" />
+              <Sun className="h-2.5 w-2.5" />
             </div>
 
             {/* Sliding Smooth Thumb */}
             <div
-              className={`absolute top-0.5 bottom-0.5 w-[28px] bg-black text-white dark:bg-white dark:text-black shadow-sm transition-transform duration-300 ease-out flex items-center justify-center rounded-none ${
-                theme === "light" ? "translate-x-[30px]" : "translate-x-0"
+              className={`absolute top-0.5 bottom-0.5 w-[24px] bg-black text-white dark:bg-white dark:text-black shadow-sm transition-transform duration-300 ease-out flex items-center justify-center rounded-none ${
+                theme === "light" ? "translate-x-[26px]" : "translate-x-0"
               }`}
             >
               {theme === "dark" ? (
-                <Moon className="h-3.5 w-3.5 fill-current" />
+                <Moon className="h-3 w-3 fill-current" />
               ) : (
-                <Sun className="h-3.5 w-3.5 fill-current" />
+                <Sun className="h-3 w-3 fill-current" />
               )}
             </div>
+          </button>
+
+          {/* Animated Settings Icon Button */}
+          <button
+            type="button"
+            onClick={() => onSelectView("settings")}
+            className={`h-8 w-8 flex items-center justify-center bg-white dark:bg-[#09090B] border ${
+              activeView === "settings"
+                ? "border-black dark:border-white text-black dark:text-white font-bold shadow-sm"
+                : "border-[#E4E4E7] dark:border-[#27272A] text-zinc-600 dark:text-zinc-400 hover:border-black dark:hover:border-[#A1A1AA] hover:text-black dark:hover:text-white"
+            } hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-all rounded-none cursor-pointer group shrink-0 select-none`}
+            title="Application Settings"
+          >
+            <Settings className="h-3.5 w-3.5 group-hover:rotate-90 transition-transform duration-300" />
           </button>
 
           {/* GitHub Star & Support Button: [github icon | counter | star icon] */}
