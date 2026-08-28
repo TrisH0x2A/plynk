@@ -15,9 +15,16 @@ export const Logo = ({ onClick }: LogoProps) => {
         alt="Plynk Logo"
         height={28}
         width={28}
-        className="rounded-md object-contain"
+        className="rounded-none object-contain hidden dark:block"
       />
-      <p className="text-lg text-neutral-700 pb-0.5 font-bold tracking-wide">
+      <img
+        src="/logo-light.png"
+        alt="Plynk Logo"
+        height={28}
+        width={28}
+        className="rounded-none object-contain block dark:hidden"
+      />
+      <p className="text-lg text-[#09090B] dark:text-white pb-0.5 font-bold tracking-wide font-sans">
         Plynk
       </p>
     </div>

@@ -46,7 +46,7 @@ export const Sidebar = ({
       {/* Brand Header */}
       <div className="px-6 mb-8">
         <div className="flex items-center gap-x-2">
-          <img src="/logo.png" alt="Plynk" className="w-6 h-6 object-contain" />
+          <img src={theme === "light" ? "/logo-light.png" : "/logo.png"} alt="Plynk" className="w-6 h-6 object-contain" />
           <h1 className="font-bold text-xl tracking-tighter text-[#09090B] dark:text-white font-sans">
             PLYNK
           </h1>
