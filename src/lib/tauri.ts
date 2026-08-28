@@ -1,13 +1,15 @@
+function getActiveUserName(explicitName?: string): string {
+  if (explicitName && explicitName.trim()) return explicitName.trim();
+  try {
+    const saved = localStorage.getItem("plynk_user_name");
+    if (saved && saved.trim()) return saved.trim();
+  } catch {}
+  return "SYS_ADMIN";
+}
 import { invoke } from "@tauri-apps/api/core";
 import { Workspace, Board, List, Card, ListWithCards, AuditLog, ListOrderItem, CardOrderItem, RecycleBinItem } from "@/types";
 
-const getActiveUserName = (): string => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("plynk_user_name");
-    if (saved && saved.trim()) return saved.trim();
-  }
-  return "SYS_ADMIN";
-};
+
 
 export const tauriApi = {
   // Workspaces
@@ -18,7 +20,7 @@ export const tauriApi = {
     return await invoke("create_workspace", { name });
   },
   deleteWorkspace: async (id: string, userName?: string): Promise<void> => {
-    return await invoke("delete_workspace", { id, userName });
+    return await invoke("delete_workspace", { id, userName: getActiveUserName(userName) });
   },
 
   // Boards
@@ -52,7 +54,7 @@ export const tauriApi = {
     return await invoke("update_list", { id, title });
   },
   deleteList: async (id: string, userName?: string): Promise<void> => {
-    return await invoke("delete_list", { id, userName });
+    return await invoke("delete_list", { id, userName: getActiveUserName(userName) });
   },
   updateListOrder: async (items: ListOrderItem[]): Promise<void> => {
     return await invoke("update_list_order", { items });

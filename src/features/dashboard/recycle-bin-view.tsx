@@ -298,7 +298,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                       type="button"
                       onClick={() => restoreMutation.mutate(item.id)}
                       disabled={restoreMutation.isPending}
-                      className="h-8 px-3 bg-zinc-100 dark:bg-[#18181B] hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-[#E4E4E7] dark:border-[#27272A] font-mono text-xs uppercase font-semibold transition-colors flex items-center gap-x-1.5 cursor-pointer rounded-none"
+                      className="h-8 px-3 bg-white dark:bg-[#09090B] hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[#09090B] dark:text-white border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-white font-mono text-xs uppercase font-semibold transition-all flex items-center gap-x-1.5 cursor-pointer rounded-none shadow-sm dark:shadow-none"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       <span>Restore</span>
@@ -311,7 +311,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                         }
                       }}
                       disabled={deletePermanentMutation.isPending}
-                      className="h-8 px-3 bg-transparent hover:bg-rose-600 hover:text-white text-[#71717A] dark:text-[#656467] border border-[#E4E4E7] dark:border-[#27272A] hover:border-rose-600 font-mono text-xs uppercase font-semibold transition-colors flex items-center gap-x-1.5 cursor-pointer rounded-none"
+                      className="h-8 px-3 bg-white dark:bg-[#09090B] hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white text-rose-600 dark:text-rose-400 border border-[#E4E4E7] dark:border-[#27272A] hover:border-rose-600 dark:hover:border-rose-600 font-mono text-xs uppercase font-semibold transition-all flex items-center gap-x-1.5 cursor-pointer rounded-none shadow-sm dark:shadow-none"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       <span>Delete Forever</span>
