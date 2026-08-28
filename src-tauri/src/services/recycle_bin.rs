@@ -257,6 +257,71 @@ pub fn soft_delete_board(conn: &Connection, id: &str, actor: &str) -> AppResult<
     Ok(())
 }
 
+pub fn soft_delete_list(conn: &Connection, id: &str, actor: &str) -> AppResult<()> {
+    let l: List = conn.query_row(
+        "SELECT id, board_id, title, order_idx, created_at, updated_at FROM lists WHERE id = ?1",
+        params![id],
+        |row| {
+            Ok(List {
+                id: row.get(0)?,
+                board_id: row.get(1)?,
+                title: row.get(2)?,
+                order_idx: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        },
+    ).map_err(|_| AppError::NotFound(format!("List {} not found", id)))?;
+
+    let board_title: String = conn.query_row(
+        "SELECT title FROM boards WHERE id = ?1",
+        params![&l.board_id],
+        |row| row.get(0),
+    ).unwrap_or_else(|_| "Board".to_string());
+
+    let mut c_stmt = conn.prepare("SELECT id, list_id, title, order_idx, description, status, labels, created_at, updated_at FROM cards WHERE list_id = ?1")?;
+    let card_rows = c_stmt.query_map(params![id], |row| {
+        Ok(Card {
+            id: row.get(0)?,
+            list_id: row.get(1)?,
+            title: row.get(2)?,
+            order_idx: row.get(3)?,
+            description: row.get(4)?,
+            status: row.get(5)?,
+            labels: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+        })
+    })?;
+
+    let cards: Vec<Card> = card_rows.filter_map(Result::ok).collect();
+    let card_count = cards.len();
+
+    let payload = serde_json::to_string(&StoredListPayload {
+        list: l.clone(),
+        cards,
+    })?;
+
+    let meta = json!({
+        "card_count": card_count,
+        "board_title": board_title,
+        "board_id": l.board_id
+    }).to_string();
+
+    let bin_id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    conn.execute(
+        "INSERT INTO recycle_bin (id, item_type, item_id, title, parent_workspace_id, parent_board_id, parent_list_id, payload, meta, actor, deleted_at)
+         VALUES (?1, 'LIST', ?2, ?3, NULL, ?4, NULL, ?5, ?6, ?7, ?8)",
+        params![bin_id, l.id, l.title, l.board_id, payload, meta, actor, now],
+    )?;
+
+    conn.execute("DELETE FROM lists WHERE id = ?1", params![id])?;
+
+    Ok(())
+}
+
 pub fn soft_delete_card(conn: &Connection, id: &str, actor: &str) -> AppResult<()> {
     let c: Card = conn.query_row(
         "SELECT id, list_id, title, order_idx, description, status, labels, created_at, updated_at FROM cards WHERE id = ?1",
@@ -393,6 +458,31 @@ pub fn restore_item(conn: &Connection, id: &str) -> AppResult<()> {
                 }
             }
         }
+    } else if item.item_type == "LIST" {
+        let l_data: StoredListPayload = serde_json::from_str(&item.payload)?;
+        let l = l_data.list;
+
+        let board_exists: i64 = conn.query_row("SELECT COUNT(*) FROM boards WHERE id = ?1", params![&l.board_id], |r| r.get(0)).unwrap_or(0);
+        let target_board_id = if board_exists > 0 {
+            l.board_id.clone()
+        } else {
+            conn.query_row("SELECT id FROM boards LIMIT 1", [], |r| r.get(0)).unwrap_or_else(|_| "".into())
+        };
+
+        if !target_board_id.is_empty() {
+            conn.execute(
+                "INSERT OR REPLACE INTO lists (id, board_id, title, order_idx, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![l.id, target_board_id, l.title, l.order_idx, l.created_at, l.updated_at],
+            )?;
+
+            for c in l_data.cards {
+                conn.execute(
+                    "INSERT OR REPLACE INTO cards (id, list_id, title, order_idx, description, status, labels, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                    params![c.id, l.id, c.title, c.order_idx, c.description.unwrap_or_default(), c.status.unwrap_or_else(|| "ACTIVE".into()), c.labels.unwrap_or_else(|| "[]".into()), c.created_at, c.updated_at],
+                )?;
+            }
+        }
     } else if item.item_type == "CARD" {
         let c_data: StoredCardPayload = serde_json::from_str(&item.payload)?;
         let c = c_data.card;
@@ -422,6 +512,7 @@ pub fn restore_all_items(conn: &Connection) -> AppResult<()> {
     let items = get_recycle_bin_items(conn)?;
     let mut workspaces = Vec::new();
     let mut boards = Vec::new();
+    let mut lists = Vec::new();
     let mut cards = Vec::new();
 
     for it in items {
@@ -429,6 +520,8 @@ pub fn restore_all_items(conn: &Connection) -> AppResult<()> {
             workspaces.push(it);
         } else if it.item_type == "BOARD" {
             boards.push(it);
+        } else if it.item_type == "LIST" {
+            lists.push(it);
         } else {
             cards.push(it);
         }
@@ -439,6 +532,9 @@ pub fn restore_all_items(conn: &Connection) -> AppResult<()> {
     }
     for b in boards {
         let _ = restore_item(conn, &b.id);
+    }
+    for l in lists {
+        let _ = restore_item(conn, &l.id);
     }
     for c in cards {
         let _ = restore_item(conn, &c.id);

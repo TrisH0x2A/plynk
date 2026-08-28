@@ -201,23 +201,18 @@ export const Sidebar = ({
             <Settings className="h-3.5 w-3.5 group-hover:rotate-90 transition-transform duration-300" />
           </button>
 
-          {/* Recycle Bin Button */}
+          {/* Animated Recycle Bin Button (No counter badge, smooth tilt/bounce animation) */}
           <button
             type="button"
             onClick={() => onSelectView("bin")}
-            className={`relative h-8 w-8 flex items-center justify-center bg-white dark:bg-[#09090B] border ${
+            className={`h-8 w-8 flex items-center justify-center bg-white dark:bg-[#09090B] border ${
               activeView === "bin"
                 ? "border-black dark:border-white text-black dark:text-white font-bold shadow-sm"
                 : "border-[#E4E4E7] dark:border-[#27272A] text-zinc-600 dark:text-zinc-400 hover:border-black dark:hover:border-[#A1A1AA] hover:text-black dark:hover:text-white"
-            } hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-all rounded-none cursor-pointer group shrink-0 select-none`}
+            } hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] active:scale-95 transition-all rounded-none cursor-pointer group shrink-0 select-none`}
             title="Recycle Bin // Recovery & Archival"
           >
-            <Trash2 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform duration-200" />
-            {binItems && binItems.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 px-1 min-w-[14px] h-[14px] bg-rose-600 text-white font-mono text-[9px] font-bold rounded-full flex items-center justify-center border border-white dark:border-black">
-                {binItems.length > 9 ? "9+" : binItems.length}
-              </span>
-            )}
+            <Trash2 className="h-3.5 w-3.5 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-12 group-hover:-translate-y-0.5 group-hover:text-rose-600 dark:group-hover:text-rose-400" />
           </button>
 
           {/* GitHub Star & Support Button: [github icon | counter | star icon] */}

@@ -36,6 +36,7 @@ export const Actions = ({ data, boardId }: ActionsProps) => {
       setIsLoading(true);
       await tauriApi.deleteCard(data.id);
       queryClient.invalidateQueries({ queryKey: ["board-lists", boardId] });
+      queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
       toast.success(`Card "${data.title}" deleted`);
       cardModal.onClose();
     } catch (error) {

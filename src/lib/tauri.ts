@@ -51,8 +51,8 @@ export const tauriApi = {
   updateList: async (id: string, title: string): Promise<List> => {
     return await invoke("update_list", { id, title });
   },
-  deleteList: async (id: string): Promise<void> => {
-    return await invoke("delete_list", { id });
+  deleteList: async (id: string, userName?: string): Promise<void> => {
+    return await invoke("delete_list", { id, userName });
   },
   updateListOrder: async (items: ListOrderItem[]): Promise<void> => {
     return await invoke("update_list_order", { items });

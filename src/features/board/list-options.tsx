@@ -26,6 +26,7 @@ export const ListOptions = ({ data, boardId, onAddCard }: ListOptionsProps) => {
     try {
       await tauriApi.deleteList(data.id);
       queryClient.invalidateQueries({ queryKey: ["board-lists", boardId] });
+      queryClient.invalidateQueries({ queryKey: ["recycle-bin"] });
       toast.success(`List "${data.title}" deleted`);
       closeRef.current?.click();
     } catch (error) {

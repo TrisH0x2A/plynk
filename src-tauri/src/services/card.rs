@@ -133,29 +133,8 @@ pub fn update_card(
 }
 
 pub fn delete_card(conn: &Connection, id: &str, user_name: Option<String>) -> AppResult<()> {
-    let existing = get_card_by_id(conn, id)?;
-
-    let board_id: String = conn.query_row(
-        "SELECT board_id FROM lists WHERE id = ?1",
-        params![existing.list_id],
-        |row| row.get(0),
-    )?;
-    let board = get_board(conn, &board_id)?;
     let actor = user_name.as_deref().unwrap_or("SYS_ADMIN");
-
-    conn.execute("DELETE FROM cards WHERE id = ?1", params![id])?;
-
-    create_audit_log_with_user(
-        conn,
-        &board.workspace_id,
-        "DELETE",
-        id,
-        "CARD",
-        &existing.title,
-        actor,
-    )?;
-
-    Ok(())
+    crate::services::recycle_bin::soft_delete_card(conn, id, actor)
 }
 
 pub fn update_card_order(conn: &Connection, items: Vec<CardOrderItem>) -> AppResult<()> {

@@ -83,6 +83,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
 
   const workspaceCount = items.filter((i) => i.item_type === "WORKSPACE").length;
   const boardCount = items.filter((i) => i.item_type === "BOARD").length;
+  const listCount = items.filter((i) => i.item_type === "LIST").length;
   const cardCount = items.filter((i) => i.item_type === "CARD").length;
 
   const formatDate = (iso: string) => {
@@ -159,6 +160,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
             { id: "ALL", label: "ALL", count: items.length },
             { id: "WORKSPACE", label: "WORKSPACES", count: workspaceCount },
             { id: "BOARD", label: "BOARDS", count: boardCount },
+            { id: "LIST", label: "LISTS", count: listCount },
             { id: "CARD", label: "CARDS", count: cardCount },
           ].map((tab) => (
             <button
@@ -225,6 +227,8 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                             ? "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20"
                             : item.item_type === "BOARD"
                             ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
+                            : item.item_type === "LIST"
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
                             : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
                         }`}
                       >
@@ -264,6 +268,16 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                           <Layout className="h-3 w-3" />
                           <span>
                             {meta.card_count || 0} Cards • {meta.list_count || 0} Lists
+                          </span>
+                        </span>
+                      )}
+
+                      {/* List stats */}
+                      {item.item_type === "LIST" && (
+                        <span className="flex items-center gap-x-1 text-amber-600 dark:text-amber-400 font-semibold">
+                          <Layers className="h-3 w-3" />
+                          <span>
+                            {meta.card_count || 0} Cards • In: {meta.board_title || "Board"}
                           </span>
                         </span>
                       )}

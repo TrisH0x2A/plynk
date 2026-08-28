@@ -116,28 +116,9 @@ pub fn update_list(conn: &Connection, id: &str, title: String) -> AppResult<List
     Ok(list)
 }
 
-pub fn delete_list(conn: &Connection, id: &str) -> AppResult<()> {
-    let list: List = conn.query_row(
-        "SELECT id, board_id, title, order_idx, created_at, updated_at FROM lists WHERE id = ?1",
-        params![id],
-        |row| {
-            Ok(List {
-                id: row.get(0)?,
-                board_id: row.get(1)?,
-                title: row.get(2)?,
-                order_idx: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
-            })
-        },
-    )?;
-
-    conn.execute("DELETE FROM lists WHERE id = ?1", params![id])?;
-
-    let board = get_board(conn, &list.board_id)?;
-    create_audit_log(conn, &board.workspace_id, "DELETE", id, "LIST", &list.title)?;
-
-    Ok(())
+pub fn delete_list(conn: &Connection, id: &str, user_name: Option<String>) -> AppResult<()> {
+    let actor = user_name.as_deref().unwrap_or("SYS_ADMIN");
+    crate::services::recycle_bin::soft_delete_list(conn, id, actor)
 }
 
 pub fn update_list_order(
