@@ -21,11 +21,6 @@ interface SidebarProps {
   onDeleteWorkspace?: (id: string, name: string) => void;
 }
 
-  const { data: binItems = [] } = useQuery({
-    queryKey: ["recycle-bin"],
-    queryFn: () => tauriApi.getRecycleBin(),
-  });
-
 export const Sidebar = ({
   userName = "SYS_ADMIN",
   theme = "dark",
@@ -41,6 +36,11 @@ export const Sidebar = ({
 }: SidebarProps) => {
   const initial = userName ? userName.charAt(0).toUpperCase() : "S";
   const [starCount, setStarCount] = useState<string>("...");
+
+  const { data: binItems = [] } = useQuery({
+    queryKey: ["recycle-bin"],
+    queryFn: () => tauriApi.getRecycleBin(),
+  });
 
   useEffect(() => {
     fetchGitHubStars(APP_LINKS.GITHUB_REPO).then((stars) => {
