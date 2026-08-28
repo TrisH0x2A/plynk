@@ -15,7 +15,7 @@ export const tauriApi = {
 
   // Whiteboards
   getWhiteboardsByWorkspace: async (workspaceId: string): Promise<Whiteboard[]> => {
-    return await invoke("get_whiteboards_by_workspace", { workspaceId });
+    return await invoke("get_whiteboards_by_workspace", { workspaceId, workspace_id: workspaceId });
   },
   getWhiteboard: async (id: string): Promise<Whiteboard> => {
     return await invoke("get_whiteboard", { id });

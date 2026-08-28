@@ -156,7 +156,14 @@ export const App = () => {
     enabled: !!activeWorkspaceId,
   });
 
-  const activeWhiteboard = (whiteboards || []).find((w) => w.id === activeWhiteboardId);
+  // Query specific active whiteboard for instant fresh canvas data
+  const { data: activeWhiteboardData } = useQuery({
+    queryKey: ["whiteboard", activeWhiteboardId],
+    queryFn: () => tauriApi.getWhiteboard(activeWhiteboardId!),
+    enabled: !!activeWhiteboardId,
+  });
+
+  const activeWhiteboard = activeWhiteboardData || (whiteboards || []).find((w) => w.id === activeWhiteboardId);
 
   // Fetch lists with cards for active board
   const { data: listsWithCards } = useQuery({

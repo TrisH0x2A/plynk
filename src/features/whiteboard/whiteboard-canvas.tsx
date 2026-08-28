@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ArrowLeft, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ArrowLeft, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   Camera,
@@ -31,7 +32,7 @@ import { SelectionTools } from "./selection-tools";
 import { Toolbar } from "./toolbar";
 import { Path } from "./path";
 
-const MAX_LAYERS = 200;
+const MAX_LAYERS = 300;
 
 interface WhiteboardCanvasProps {
   whiteboard: Whiteboard;
@@ -39,16 +40,22 @@ interface WhiteboardCanvasProps {
 }
 
 export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) => {
-  // Parse initial canvas data
+  const queryClient = useQueryClient();
+
+  // Parse initial canvas data safely
   const initialData: WhiteboardCanvasData = useMemo(() => {
     try {
+      if (!whiteboard.canvas_data || whiteboard.canvas_data === "{}" || whiteboard.canvas_data.trim() === "") {
+        return { layers: {}, layerIds: [], camera: { x: 0, y: 0 } };
+      }
       const parsed = JSON.parse(whiteboard.canvas_data);
       return {
         layers: parsed.layers || {},
-        layerIds: parsed.layerIds || [],
+        layerIds: Array.isArray(parsed.layerIds) ? parsed.layerIds : Object.keys(parsed.layers || {}),
         camera: parsed.camera || { x: 0, y: 0 },
       };
-    } catch {
+    } catch (e) {
+      console.warn("Could not parse canvas_data, initializing empty canvas", e);
       return { layers: {}, layerIds: [], camera: { x: 0, y: 0 } };
     }
   }, [whiteboard.canvas_data]);
@@ -58,9 +65,9 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   const [camera, setCamera] = useState<Camera>(initialData.camera || { x: 0, y: 0 });
   const [selection, setSelection] = useState<string[]>([]);
   const [lastUsedColor, setLastUsedColor] = useState<Color>({
-    r: 243,
-    g: 82,
-    b: 35,
+    r: 244,
+    g: 63,
+    b: 94,
   });
 
   const [canvasState, setCanvasState] = useState<CanvasState>({
@@ -78,6 +85,12 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   const [isSaving, setIsSaving] = useState(false);
   const isDirty = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Ref to always hold latest state for unmount save
+  const latestStateRef = useRef({ layers, layerIds, camera });
+  useEffect(() => {
+    latestStateRef.current = { layers, layerIds, camera };
+  }, [layers, layerIds, camera]);
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -116,25 +129,73 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
     }
   }, [history, historyIndex]);
 
-  // Debounced auto-save to SQLite
+  // Core save function that saves to SQLite and updates React Query cache
+  const saveToStorage = useCallback(
+    async (curLayers = layers, curLayerIds = layerIds, curCamera = camera) => {
+      try {
+        setIsSaving(true);
+        const payload = JSON.stringify({
+          layers: curLayers,
+          layerIds: curLayerIds,
+          camera: curCamera,
+        });
+        await tauriApi.saveWhiteboardCanvas(whiteboard.id, payload);
+
+        // Update caches immediately
+        queryClient.setQueryData(["whiteboard", whiteboard.id], (old: Whiteboard | undefined) => {
+          if (!old) return old;
+          return { ...old, canvas_data: payload };
+        });
+
+        queryClient.setQueryData(
+          ["workspace-whiteboards", whiteboard.workspace_id],
+          (old: Whiteboard[] | undefined) => {
+            if (!old) return old;
+            return old.map((w) => (w.id === whiteboard.id ? { ...w, canvas_data: payload } : w));
+          }
+        );
+      } catch (err) {
+        console.error("Failed to save canvas", err);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [camera, layerIds, layers, queryClient, whiteboard.id, whiteboard.workspace_id]
+  );
+
+  // Debounced auto-save timer
   useEffect(() => {
-    const timer = setInterval(async () => {
+    const timer = setInterval(() => {
       if (isDirty.current) {
         isDirty.current = false;
-        setIsSaving(true);
-        try {
-          const payload = JSON.stringify({ layers, layerIds, camera });
-          await tauriApi.saveWhiteboardCanvas(whiteboard.id, payload);
-        } catch {
-          // Retry on next cycle
-        } finally {
-          setIsSaving(false);
-        }
+        saveToStorage();
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [layers, layerIds, camera, whiteboard.id]);
+  }, [saveToStorage]);
+
+  // Guaranteed save on component unmount
+  useEffect(() => {
+    return () => {
+      if (isDirty.current) {
+        const { layers: l, layerIds: ids, camera: c } = latestStateRef.current;
+        const payload = JSON.stringify({ layers: l, layerIds: ids, camera: c });
+        tauriApi.saveWhiteboardCanvas(whiteboard.id, payload).catch(console.error);
+      }
+    };
+  }, [whiteboard.id]);
+
+  // Clean back navigation handler
+  const handleBack = async () => {
+    if (isDirty.current) {
+      isDirty.current = false;
+      await saveToStorage();
+    }
+    queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", whiteboard.workspace_id] });
+    queryClient.invalidateQueries({ queryKey: ["whiteboard", whiteboard.id] });
+    onBack();
+  };
 
   // Insert standard layers
   const insertLayer = useCallback(
@@ -155,7 +216,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
           type: LayerType.Rectangle,
           x: position.x - 50,
           y: position.y - 50,
-          width: 100,
+          width: 120,
           height: 100,
           fill: lastUsedColor,
         };
@@ -164,27 +225,27 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
           type: LayerType.Ellipse,
           x: position.x - 50,
           y: position.y - 50,
-          width: 100,
-          height: 100,
+          width: 120,
+          height: 120,
           fill: lastUsedColor,
         };
       } else if (layerType === LayerType.Note) {
         newLayer = {
           type: LayerType.Note,
-          x: position.x - 50,
-          y: position.y - 50,
-          width: 100,
-          height: 100,
+          x: position.x - 60,
+          y: position.y - 60,
+          width: 140,
+          height: 140,
           fill: { r: 255, g: 249, b: 177 }, // Sticky note yellow
-          value: "Text",
+          value: "Note text",
         };
       } else {
         newLayer = {
           type: LayerType.Text,
-          x: position.x - 50,
-          y: position.y - 50,
-          width: 100,
-          height: 100,
+          x: position.x - 60,
+          y: position.y - 20,
+          width: 140,
+          height: 40,
           fill: lastUsedColor,
           value: "Text",
         };
@@ -506,20 +567,13 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   const selectionBounds = useMemo(() => {
     const selectedLayers = selection
       .map((id) => layers[id])
-      .filter(Boolean);
+      .filter((l) => Boolean(l) && l.width > 0 && l.height > 0);
 
     return boundingBox(selectedLayers);
   }, [layers, selection]);
 
   // Contextual toolbar actions
   const moveToFront = useCallback(() => {
-    const indices: number[] = [];
-    for (let i = 0; i < layerIds.length; i++) {
-      if (selection.includes(layerIds[i])) {
-        indices.push(i);
-      }
-    }
-
     const filtered = layerIds.filter((id) => !selection.includes(id));
     const newOrder = [...filtered, ...selection];
     setLayerIds(newOrder);
@@ -536,14 +590,16 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   const setFill = useCallback(
     (fill: Color) => {
       setLastUsedColor(fill);
-      const updated = { ...layers };
-      for (const id of selection) {
-        if (updated[id]) {
-          updated[id] = { ...updated[id], fill };
+      if (selection.length > 0) {
+        const updated = { ...layers };
+        for (const id of selection) {
+          if (updated[id]) {
+            updated[id] = { ...updated[id], fill };
+          }
         }
+        setLayers(updated);
+        recordHistory(updated, layerIds);
       }
-      setLayers(updated);
-      recordHistory(updated, layerIds);
     },
     [layerIds, layers, recordHistory, selection]
   );
@@ -602,7 +658,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       <div className="absolute top-3 left-3 z-40 flex items-center gap-x-2 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-2 px-3 shadow-md rounded-none">
         <button
           type="button"
-          onClick={onBack}
+          onClick={handleBack}
           className="flex items-center gap-x-1.5 font-mono text-xs font-semibold text-[#09090B] dark:text-white hover:text-rose-600 transition-colors p-0.5 cursor-pointer"
           title="Back to Whiteboards"
         >
@@ -631,7 +687,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
         </button>
       </div>
 
-      {/* Floating Toolbar with Live Color Selector */}
+      {/* Floating Toolbar with Live Color Swatch & Palette */}
       <Toolbar
         canvasState={canvasState}
         setCanvasState={setCanvasState}
