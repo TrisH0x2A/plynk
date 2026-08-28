@@ -1,5 +1,8 @@
 import React from "react";
-import { Sparkles, Plus, LayoutGrid, Activity, Settings, Database, Layers, Trash2, Moon, Sun } from "lucide-react";
+import { Plus, LayoutGrid, Activity, Settings, Database, Layers, Trash2, Moon, Sun, Github, Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { APP_LINKS, fetchGitHubStars } from "@/constants/links";
+import { tauriApi } from "@/lib/tauri";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Workspace } from "@/types";
 
@@ -7,7 +10,6 @@ interface SidebarProps {
   userName?: string;
   theme?: "dark" | "light";
   onToggleTheme?: (theme: "dark" | "light") => void;
-  onOpenOnboarding?: () => void;
   workspaces: Workspace[];
   activeWorkspaceId: string;
   activeView: string;
@@ -22,7 +24,6 @@ export const Sidebar = ({
   userName = "SYS_ADMIN",
   theme = "dark",
   onToggleTheme,
-  onOpenOnboarding,
   workspaces,
   activeWorkspaceId,
   activeView,
@@ -33,6 +34,17 @@ export const Sidebar = ({
   onDeleteWorkspace,
 }: SidebarProps) => {
   const initial = userName ? userName.charAt(0).toUpperCase() : "S";
+  const [starCount, setStarCount] = useState<string>("...");
+
+  useEffect(() => {
+    fetchGitHubStars(APP_LINKS.GITHUB_REPO).then((stars) => {
+      setStarCount(stars);
+    });
+  }, []);
+
+  const handleOpenGithub = async () => {
+    await tauriApi.openExternalUrl(APP_LINKS.GITHUB_REPO);
+  };
 
   const navItems = [
     { id: "boards", label: "BOARDS", icon: LayoutGrid },
@@ -176,14 +188,21 @@ export const Sidebar = ({
           </div>
         </div>
 
-        {/* Dev Onboarding Trigger Button */}
+        {/* GitHub Star & Support Button */}
         <button
           type="button"
-          onClick={onOpenOnboarding}
-          className="w-full flex items-center justify-center gap-x-2 py-2 px-3 bg-zinc-100 dark:bg-[#18181B] border border-dashed border-[#A1A1AA] dark:border-[#3F3F46] hover:border-black dark:hover:border-white text-[#09090B] dark:text-white font-mono text-[10px] uppercase font-bold tracking-wider transition-colors rounded-none cursor-pointer"
+          onClick={handleOpenGithub}
+          className="w-full flex items-center justify-between py-2 px-3 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-[#A1A1AA] transition-colors rounded-none cursor-pointer group select-none"
         >
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-          <span>PREVIEW ONBOARDING</span>
+          <div className="flex items-center gap-x-2 text-zinc-600 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white transition-colors">
+            <Github className="h-3.5 w-3.5" />
+            <span className="font-mono text-[10px] uppercase font-bold tracking-wider">GitHub</span>
+          </div>
+          <div className="flex items-center gap-x-1 font-mono text-[10px] text-zinc-700 dark:text-zinc-300">
+            <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+            <span className="font-bold">Star</span>
+            <span className="text-zinc-500 font-normal">({starCount})</span>
+          </div>
         </button>
 
         {/* User Card */}

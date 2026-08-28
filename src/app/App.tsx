@@ -166,7 +166,6 @@ export const App = () => {
         userName={userName}
         theme={theme}
         onToggleTheme={setTheme}
-        onOpenOnboarding={() => setIsOnboardingOpen(true)}
         workspaces={workspaces || []}
         activeWorkspaceId={activeWorkspaceId}
         activeView={activeView}
