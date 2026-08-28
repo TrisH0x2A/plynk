@@ -251,6 +251,7 @@ export const App = () => {
               <BoardList
                 boards={boards || []}
                 workspaceId={activeWorkspaceId}
+                userName={userName}
                 onSelectBoard={(id) => setActiveBoardId(id)}
                 isLoading={isLoadingBoards}
               />

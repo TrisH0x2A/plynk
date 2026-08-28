@@ -298,9 +298,9 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                       type="button"
                       onClick={() => restoreMutation.mutate(item.id)}
                       disabled={restoreMutation.isPending}
-                      className="h-8 px-3 bg-white dark:bg-[#09090B] hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[#09090B] dark:text-white border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-white font-mono text-xs uppercase font-semibold transition-all flex items-center gap-x-1.5 cursor-pointer rounded-none shadow-sm dark:shadow-none"
+                      className="h-8 px-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-[#18181B] dark:hover:bg-[#27272A] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-[#27272A] hover:border-zinc-500 dark:hover:border-zinc-500 font-mono text-xs uppercase font-semibold transition-colors flex items-center gap-x-1.5 cursor-pointer rounded-none shadow-sm"
                     >
-                      <RotateCcw className="h-3.5 w-3.5" />
+                      <RotateCcw className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" />
                       <span>Restore</span>
                     </button>
                     <button

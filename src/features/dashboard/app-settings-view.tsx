@@ -72,6 +72,14 @@ export const AppSettingsView = ({
           <Input
             value={callsign}
             onChange={(e) => setCallsign(e.target.value)}
+            onBlur={() => {
+              const trimmed = callsign.trim();
+              if (trimmed && trimmed !== userName) {
+                localStorage.setItem("plynk_user_name", trimmed);
+                onUpdateUserName(trimmed);
+                toast.success(`Callsign updated to "${trimmed}"`);
+              }
+            }}
             placeholder="ENTER YOUR CALLSIGN..."
             className="flex-1 bg-zinc-50 dark:bg-[#131315] border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-white font-mono text-xs uppercase h-10 rounded-none focus-visible:border-black dark:focus-visible:border-white focus-visible:ring-0"
           />

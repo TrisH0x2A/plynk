@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 interface BoardListProps {
   boards: Board[];
   workspaceId: string;
+  userName?: string;
   onSelectBoard: (boardId: string) => void;
   isLoading?: boolean;
 }
@@ -25,6 +26,7 @@ interface BoardListProps {
 export const BoardList = ({
   boards,
   workspaceId,
+  userName,
   onSelectBoard,
   isLoading = false,
 }: BoardListProps) => {
@@ -62,7 +64,7 @@ export const BoardList = ({
     if (!confirmed) return;
 
     try {
-      await tauriApi.deleteBoard(board.id);
+      await tauriApi.deleteBoard(board.id, userName);
       toast.success(`Board "${board.title}" deleted`);
       queryClient.invalidateQueries({ queryKey: ["boards", workspaceId] });
     } catch (err) {

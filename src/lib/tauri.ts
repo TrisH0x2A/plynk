@@ -20,7 +20,8 @@ export const tauriApi = {
     return await invoke("create_workspace", { name });
   },
   deleteWorkspace: async (id: string, userName?: string): Promise<void> => {
-    return await invoke("delete_workspace", { id, userName: getActiveUserName(userName) });
+    const user = getActiveUserName(userName);
+    return await invoke("delete_workspace", { id, userName: user, user_name: user });
   },
 
   // Boards
@@ -38,9 +39,9 @@ export const tauriApi = {
     const userName = getActiveUserName();
     return await invoke("update_board", { id, title, userName });
   },
-  deleteBoard: async (id: string): Promise<void> => {
-    const userName = getActiveUserName();
-    return await invoke("delete_board", { id, userName });
+  deleteBoard: async (id: string, userName?: string): Promise<void> => {
+    const user = getActiveUserName(userName);
+    return await invoke("delete_board", { id, userName: user, user_name: user });
   },
 
   // Lists
@@ -54,7 +55,8 @@ export const tauriApi = {
     return await invoke("update_list", { id, title });
   },
   deleteList: async (id: string, userName?: string): Promise<void> => {
-    return await invoke("delete_list", { id, userName: getActiveUserName(userName) });
+    const user = getActiveUserName(userName);
+    return await invoke("delete_list", { id, userName: user, user_name: user });
   },
   updateListOrder: async (items: ListOrderItem[]): Promise<void> => {
     return await invoke("update_list_order", { items });
@@ -78,9 +80,9 @@ export const tauriApi = {
     const userName = getActiveUserName();
     return await invoke("update_card", { id, title, description, status, labels, userName });
   },
-  deleteCard: async (id: string): Promise<void> => {
-    const userName = getActiveUserName();
-    return await invoke("delete_card", { id, userName });
+  deleteCard: async (id: string, userName?: string): Promise<void> => {
+    const user = getActiveUserName(userName);
+    return await invoke("delete_card", { id, userName: user, user_name: user });
   },
   updateCardOrder: async (items: CardOrderItem[]): Promise<void> => {
     return await invoke("update_card_order", { items });
