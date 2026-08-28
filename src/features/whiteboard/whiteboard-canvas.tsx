@@ -631,10 +631,12 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
         </button>
       </div>
 
-      {/* Floating Toolbar */}
+      {/* Floating Toolbar with Live Color Selector */}
       <Toolbar
         canvasState={canvasState}
         setCanvasState={setCanvasState}
+        currentColor={lastUsedColor}
+        onColorChange={setFill}
         canRedo={canRedo}
         canUndo={canUndo}
         undo={undo}
