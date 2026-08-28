@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+import { useBoardAutoScroll } from "@/hooks/use-board-auto-scroll";
 
 import { ListWithCards } from "@/types";
 import { tauriApi } from "@/lib/tauri";
@@ -11,6 +12,7 @@ import { ListItem } from "./list-item";
 interface ListContainerProps {
   data: ListWithCards[];
   boardId: string;
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
 function reorder<T>(list: T[], startIndex: number, endIndex: number) {
@@ -20,8 +22,14 @@ function reorder<T>(list: T[], startIndex: number, endIndex: number) {
   return result;
 }
 
-export const ListContainer = ({ data, boardId }: ListContainerProps) => {
+export const ListContainer = ({ data, boardId, scrollContainerRef }: ListContainerProps) => {
   const [orderedData, setOrderedData] = useState(data);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useBoardAutoScroll({
+    containerRef: scrollContainerRef || { current: null },
+    isDragging,
+  });
   const skipNextSync = useRef(false);
 
   useEffect(() => {
@@ -173,7 +181,13 @@ export const ListContainer = ({ data, boardId }: ListContainerProps) => {
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DragDropContext
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={(result) => {
+        setIsDragging(false);
+        onDragEnd(result);
+      }}
+    >
       <Droppable droppableId="lists" type="list" direction="horizontal">
         {(provided) => (
           <ol

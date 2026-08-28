@@ -250,6 +250,7 @@ export const App = () => {
               <ListContainer
                 data={listsWithCards || []}
                 boardId={activeBoard.id}
+                scrollContainerRef={boardScrollRef}
               />
             </main>
           </div>
