@@ -68,6 +68,7 @@ export type NoteLayer = {
   width: number;
   fill: Color;
   value?: string;
+  fontSize?: number;
 };
 
 export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | NoteLayer;

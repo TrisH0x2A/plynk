@@ -708,8 +708,8 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
             ))}
           </div>
 
-          {/* Font Size Controls — only for Text layers */}
-          {selectedLayerIds.length === 1 && layers[selectedLayerIds[0]]?.type === LayerType.Text && (
+          {/* Font Size Controls — for Text and Note layers */}
+          {selectedLayerIds.length === 1 && (layers[selectedLayerIds[0]]?.type === LayerType.Text || layers[selectedLayerIds[0]]?.type === LayerType.Note) && (
             <div className="flex items-center gap-x-1 border-r border-zinc-200 dark:border-zinc-800 pr-2">
               <span className="font-mono text-[10px] text-[#71717A] dark:text-[#656467] uppercase mr-1">Size</span>
               {FONT_SIZES.map((size) => {
@@ -722,7 +722,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                     onClick={() => {
                       const updated = { ...layers };
                       const id = selectedLayerIds[0];
-                      if (updated[id] && updated[id].type === LayerType.Text) {
+                      if (updated[id] && (updated[id].type === LayerType.Text || updated[id].type === LayerType.Note)) {
                         updated[id] = { ...updated[id], fontSize: size } as Layer;
                       }
                       setLayers(updated);
@@ -846,6 +846,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
             }
 
             if (layer.type === LayerType.Note) {
+              const noteFontSize = layer.fontSize || 13;
               return (
                 <g
                   key={layerId}
@@ -876,9 +877,21 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                           isDirty.current = true;
                         }}
                         onPointerDown={(e) => e.stopPropagation()}
-                        className="w-full h-full p-3 font-sans text-xs bg-transparent resize-none border-none outline-none font-semibold"
-                        style={{ color: getContrastingTextColor(layer.fill) }}
                         placeholder="Type note..."
+                        style={{
+                          color: getContrastingTextColor(layer.fill),
+                          backgroundColor: "transparent",
+                          outline: "none",
+                          border: "none",
+                          resize: "none",
+                          width: "100%",
+                          height: "100%",
+                          padding: "10px 12px",
+                          fontFamily: "system-ui, -apple-system, sans-serif",
+                          fontSize: `${noteFontSize}px`,
+                          fontWeight: 600,
+                          lineHeight: "1.4",
+                        }}
                       />
                     </div>
                   </foreignObject>
