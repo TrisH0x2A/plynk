@@ -577,7 +577,10 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       </div>
 
       {/* Floating Brutalist Tool Palette (Left or Center) */}
-      <div className="absolute top-16 left-3 z-40 flex flex-col gap-y-1.5 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-1.5 shadow-xl rounded-none">
+      <div
+        className="absolute top-16 left-3 z-40 flex flex-col gap-y-1.5 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-1.5 shadow-xl rounded-none"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           onClick={() => setCanvasState({ mode: CanvasMode.None })}
@@ -690,10 +693,13 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       {/* Contextual Properties Bar for Selected Elements */}
       {selectedLayerIds.length > 0 && selectionBoundingBox && (
         <div
-          className="absolute z-40 flex items-center gap-x-2 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-2 shadow-2xl rounded-none pointer-events-auto"
+          className="absolute z-50 flex items-center gap-x-2 bg-white dark:bg-[#131315] border border-[#E4E4E7] dark:border-[#27272A] p-2 shadow-2xl rounded-none pointer-events-auto"
           style={{
             transform: `translate(${Math.max(80, selectionBoundingBox.x * camera.zoom + camera.x)}px, ${Math.max(70, (selectionBoundingBox.y - 50) * camera.zoom + camera.y)}px)`,
           }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Color Palette */}
           <div className="flex items-center gap-x-1 border-r border-zinc-200 dark:border-zinc-800 pr-2">
@@ -722,8 +728,17 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                     onClick={() => {
                       const updated = { ...layers };
                       const id = selectedLayerIds[0];
-                      if (updated[id] && (updated[id].type === LayerType.Text || updated[id].type === LayerType.Note)) {
-                        updated[id] = { ...updated[id], fontSize: size } as Layer;
+                      if (updated[id]) {
+                        const layer = updated[id];
+                        if (layer.type === LayerType.Text) {
+                          // Auto-size the text layer to fit the new font size
+                          const textLen = (layer.value || "").length || 5;
+                          const newWidth = Math.max(200, textLen * size * 0.7);
+                          const newHeight = Math.max(size * 1.8, 36);
+                          updated[id] = { ...layer, fontSize: size, width: newWidth, height: newHeight } as Layer;
+                        } else if (layer.type === LayerType.Note) {
+                          updated[id] = { ...layer, fontSize: size } as Layer;
+                        }
                       }
                       setLayers(updated);
                       recordHistory(updated, layerIds);
@@ -901,6 +916,9 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
 
             if (layer.type === LayerType.Text) {
               const fontSize = layer.fontSize || 20;
+              const textLen = (layer.value || "").length || 5;
+              const dynWidth = Math.max(layer.width, textLen * fontSize * 0.65 + 20);
+              const dynHeight = Math.max(layer.height, fontSize * 1.6 + 10);
               return (
                 <g
                   key={layerId}
@@ -910,16 +928,19 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                   className="cursor-pointer"
                 >
                   <foreignObject
-                    width={layer.width}
-                    height={layer.height}
+                    width={dynWidth}
+                    height={dynHeight}
                     style={{ overflow: "visible" }}
                   >
                     <textarea
                       value={layer.value || ""}
                       onChange={(e) => {
+                        const textVal = e.target.value;
+                        const newW = Math.max(200, textVal.length * fontSize * 0.65 + 20);
+                        const newH = Math.max(36, fontSize * 1.6 + 10);
                         const updated = {
                           ...layers,
-                          [layerId]: { ...layer, value: e.target.value },
+                          [layerId]: { ...layer, value: textVal, width: newW, height: newH },
                         };
                         setLayers(updated);
                         isDirty.current = true;
@@ -936,8 +957,8 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                         fontSize: `${fontSize}px`,
                         fontWeight: 700,
                         letterSpacing: "0.05em",
-                        width: `${layer.width}px`,
-                        minHeight: `${layer.height}px`,
+                        width: `${dynWidth}px`,
+                        minHeight: `${dynHeight}px`,
                         padding: "4px 2px",
                         lineHeight: "1.3",
                         caretColor: colorToCss(layer.fill),
