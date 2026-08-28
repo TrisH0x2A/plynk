@@ -45,7 +45,7 @@ export const AppSettingsView = ({
     { key: "CTRL + B", desc: "Jump to Boards overview dashboard" },
     { key: "ENTER", desc: "Submit new card or column" },
     { key: "ESC", desc: "Close dialogs or cancel active input" },
-    { key: "CLICK + DRAG", desc: "Reorder lists and cards seamlessly" },
+    { key: "MIDDLE CLICK", desc: "Hold & drag to pan board in all directions" },
   ];
 
   return (

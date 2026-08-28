@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
 
@@ -12,6 +12,7 @@ import { AppSettingsView } from "@/features/dashboard/app-settings-view";
 import { RecycleBinView } from "@/features/dashboard/recycle-bin-view";
 import { BackupView } from "@/features/dashboard/backup-view";
 import { BoardNavbar } from "@/features/board/board-navbar";
+import { useMiddleClickPan } from "@/hooks/use-middle-click-pan";
 import { ListContainer } from "@/features/board/list-container";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import { OnboardingModal } from "@/components/modals/onboarding-modal";
@@ -19,6 +20,8 @@ import { WorkspaceModal } from "@/components/modals/workspace-modal";
 
 export const App = () => {
   const queryClient = useQueryClient();
+  const boardScrollRef = useRef<HTMLDivElement>(null);
+  const { isPanning } = useMiddleClickPan(boardScrollRef);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("boards");
@@ -238,7 +241,12 @@ export const App = () => {
               data={activeBoard}
               onDeleteSuccess={() => setActiveBoardId(null)}
             />
-            <main className="flex-1 p-6 overflow-x-auto bg-[#F4F4F5] dark:bg-[#131315] transition-colors duration-200">
+            <main
+              ref={boardScrollRef}
+              className={`flex-1 p-6 overflow-auto bg-[#F4F4F5] dark:bg-[#131315] transition-colors duration-200 ${
+                isPanning ? "cursor-grabbing select-none" : ""
+              }`}
+            >
               <ListContainer
                 data={listsWithCards || []}
                 boardId={activeBoard.id}
