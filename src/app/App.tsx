@@ -58,7 +58,26 @@ export const App = () => {
           e.preventDefault();
           e.stopPropagation();
           window.dispatchEvent(new CustomEvent("plynk:open-filter"));
+          return;
         }
+      }
+
+      // Ctrl+B or Cmd+B: Jump to Boards overview
+      if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B" || e.code === "KeyB")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveBoardId(null);
+        setActiveView("boards");
+        return;
+      }
+
+      // Ctrl+, or Cmd+,: Open App Settings
+      if ((e.ctrlKey || e.metaKey) && (e.key === "," || e.code === "Comma")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveBoardId(null);
+        setActiveView("app-settings");
+        return;
       }
     };
 
