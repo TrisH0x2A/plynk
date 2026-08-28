@@ -214,6 +214,15 @@ export const App = () => {
             {activeView === "settings" && activeWorkspace && (
               <SettingsView workspace={activeWorkspace} onDeleteWorkspace={handleDeleteWorkspace} />
             )}
+            {activeView === "app-settings" && (
+              <AppSettingsView
+                userName={userName}
+                onUpdateUserName={(name) => {
+                  localStorage.setItem("plynk_user_name", name);
+                  setUserName(name);
+                }}
+              />
+            )}
             {activeView === "backup" && <BackupView />}
           </main>
         )}
