@@ -56,6 +56,12 @@ pub fn run() {
             commands::recycle_bin::restore_all_bin_items,
             commands::recycle_bin::delete_bin_item_permanently,
             commands::recycle_bin::clear_recycle_bin,
+            commands::whiteboard::get_whiteboards_by_workspace,
+            commands::whiteboard::get_whiteboard,
+            commands::whiteboard::create_whiteboard,
+            commands::whiteboard::update_whiteboard,
+            commands::whiteboard::save_whiteboard_canvas,
+            commands::whiteboard::delete_whiteboard,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

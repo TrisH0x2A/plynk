@@ -6,6 +6,8 @@ import { tauriApi } from "@/lib/tauri";
 import { Workspace } from "@/types";
 import { Sidebar } from "@/features/dashboard/sidebar";
 import { BoardList } from "@/features/dashboard/board-list";
+import { WhiteboardList } from "@/features/whiteboard/whiteboard-list";
+import { WhiteboardCanvas } from "@/features/whiteboard/whiteboard-canvas";
 import { ActivityView } from "@/features/dashboard/activity-view";
 import { SettingsView } from "@/features/dashboard/settings-view";
 import { AppSettingsView } from "@/features/dashboard/app-settings-view";
@@ -24,6 +26,7 @@ export const App = () => {
   const { isPanning } = useMiddleClickPan(boardScrollRef);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
+  const [activeWhiteboardId, setActiveWhiteboardId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("boards");
 
   // Theme state (monochrome dark vs monochrome light)
@@ -146,6 +149,15 @@ export const App = () => {
     enabled: !!activeBoardId,
   });
 
+  // Fetch whiteboards for active workspace
+  const { data: whiteboards, isLoading: isLoadingWhiteboards } = useQuery({
+    queryKey: ["workspace-whiteboards", activeWorkspaceId],
+    queryFn: () => tauriApi.getWhiteboardsByWorkspace(activeWorkspaceId!),
+    enabled: !!activeWorkspaceId,
+  });
+
+  const activeWhiteboard = (whiteboards || []).find((w) => w.id === activeWhiteboardId);
+
   // Fetch lists with cards for active board
   const { data: listsWithCards } = useQuery({
     queryKey: ["board-lists", activeBoardId],
@@ -224,10 +236,12 @@ export const App = () => {
         onSelectWorkspace={(id) => {
           setActiveWorkspaceId(id);
           setActiveBoardId(null);
+          setActiveWhiteboardId(null);
         }}
         onSelectView={(view) => {
           setActiveView(view);
           setActiveBoardId(null);
+          setActiveWhiteboardId(null);
         }}
         onCreateWorkspace={handleCreateWorkspace}
         onDeleteWorkspace={handleDeleteWorkspace}
@@ -235,7 +249,12 @@ export const App = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-black">
-        {activeBoardId && activeBoard ? (
+        {activeWhiteboardId && activeWhiteboard ? (
+          <WhiteboardCanvas
+            whiteboard={activeWhiteboard}
+            onBack={() => setActiveWhiteboardId(null)}
+          />
+        ) : activeBoardId && activeBoard ? (
           <div className="flex flex-col h-full w-full bg-black overflow-hidden">
             <BoardNavbar
               data={activeBoard}
@@ -263,6 +282,15 @@ export const App = () => {
                 userName={userName}
                 onSelectBoard={(id) => setActiveBoardId(id)}
                 isLoading={isLoadingBoards}
+              />
+            )}
+            {activeView === "whiteboards" && (
+              <WhiteboardList
+                whiteboards={whiteboards || []}
+                workspaceId={activeWorkspaceId}
+                userName={userName}
+                onSelectWhiteboard={(id) => setActiveWhiteboardId(id)}
+                isLoading={isLoadingWhiteboards}
               />
             )}
             {activeView === "activity" && activeWorkspaceId && (

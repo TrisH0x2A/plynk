@@ -7,11 +7,35 @@ function getActiveUserName(explicitName?: string): string {
   return "SYS_ADMIN";
 }
 import { invoke } from "@tauri-apps/api/core";
-import { Workspace, Board, List, Card, ListWithCards, AuditLog, ListOrderItem, CardOrderItem, RecycleBinItem } from "@/types";
+import { Workspace, Board, List, Card, ListWithCards, AuditLog, ListOrderItem, CardOrderItem, RecycleBinItem, Whiteboard } from "@/types";
 
 
 
 export const tauriApi = {
+
+  // Whiteboards
+  getWhiteboardsByWorkspace: async (workspaceId: string): Promise<Whiteboard[]> => {
+    return await invoke("get_whiteboards_by_workspace", { workspaceId });
+  },
+  getWhiteboard: async (id: string): Promise<Whiteboard> => {
+    return await invoke("get_whiteboard", { id });
+  },
+  createWhiteboard: async (workspaceId: string, title: string): Promise<Whiteboard> => {
+    const userName = getActiveUserName();
+    return await invoke("create_whiteboard", { workspaceId, title, userName, user_name: userName });
+  },
+  updateWhiteboard: async (id: string, title: string): Promise<Whiteboard> => {
+    const userName = getActiveUserName();
+    return await invoke("update_whiteboard", { id, title, userName, user_name: userName });
+  },
+  saveWhiteboardCanvas: async (id: string, canvasData: string): Promise<void> => {
+    return await invoke("save_whiteboard_canvas", { id, canvasData, canvas_data: canvasData });
+  },
+  deleteWhiteboard: async (id: string, userName?: string): Promise<void> => {
+    const user = getActiveUserName(userName);
+    return await invoke("delete_whiteboard", { id, userName: user, user_name: user });
+  },
+
   // Workspaces
   getWorkspaces: async (): Promise<Workspace[]> => {
     return await invoke("get_workspaces");

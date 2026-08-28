@@ -82,6 +82,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
   });
 
   const workspaceCount = items.filter((i) => i.item_type === "WORKSPACE").length;
+  const whiteboardCount = items.filter((i) => i.item_type === "WHITEBOARD").length;
   const boardCount = items.filter((i) => i.item_type === "BOARD").length;
   const listCount = items.filter((i) => i.item_type === "LIST").length;
   const cardCount = items.filter((i) => i.item_type === "CARD").length;
@@ -160,6 +161,7 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
             { id: "ALL", label: "ALL", count: items.length },
             { id: "WORKSPACE", label: "WORKSPACES", count: workspaceCount },
             { id: "BOARD", label: "BOARDS", count: boardCount },
+            { id: "WHITEBOARD", label: "WHITEBOARDS", count: whiteboardCount },
             { id: "LIST", label: "LISTS", count: listCount },
             { id: "CARD", label: "CARDS", count: cardCount },
           ].map((tab) => (
@@ -225,6 +227,8 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                         className={`px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider border ${
                           item.item_type === "WORKSPACE"
                             ? "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20"
+                            : item.item_type === "WHITEBOARD"
+                            ? "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20"
                             : item.item_type === "BOARD"
                             ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
                             : item.item_type === "LIST"
@@ -269,6 +273,14 @@ export const RecycleBinView = ({ onRefreshWorkspaces }: RecycleBinViewProps) => 
                           <span>
                             {meta.card_count || 0} Cards • {meta.list_count || 0} Lists
                           </span>
+                        </span>
+                      )}
+
+                      {/* Whiteboard stats */}
+                      {item.item_type === "WHITEBOARD" && (
+                        <span className="flex items-center gap-x-1 text-cyan-600 dark:text-cyan-400 font-semibold">
+                          <Layers className="h-3 w-3" />
+                          <span>{meta.layer_count || 0} Elements</span>
                         </span>
                       )}
 

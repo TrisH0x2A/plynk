@@ -74,7 +74,7 @@ export interface ListOrderItem {
 
 export interface RecycleBinItem {
   id: string;
-  item_type: "WORKSPACE" | "BOARD" | "CARD" | "LIST";
+  item_type: "WORKSPACE" | "BOARD" | "WHITEBOARD" | "CARD" | "LIST";
   item_id: string;
   title: string;
   parent_workspace_id?: string;
@@ -85,3 +85,5 @@ export interface RecycleBinItem {
   actor: string;
   deleted_at: string;
 }
+
+export * from "./whiteboard";

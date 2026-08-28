@@ -116,6 +116,18 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         );
 
         CREATE INDEX IF NOT EXISTS idx_recycle_bin_deleted_at ON recycle_bin(deleted_at DESC);
+
+        CREATE TABLE IF NOT EXISTS whiteboards (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            canvas_data TEXT NOT NULL DEFAULT '{"layers":{},"layerIds":[]}',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_whiteboards_workspace ON whiteboards(workspace_id);
+
         ",
     )?;
 

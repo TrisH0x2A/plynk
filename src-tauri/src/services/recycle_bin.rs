@@ -175,6 +175,47 @@ pub fn soft_delete_workspace(conn: &Connection, id: &str, actor: &str) -> AppRes
     Ok(())
 }
 
+pub fn soft_delete_whiteboard(conn: &Connection, id: &str, actor: &str) -> AppResult<()> {
+    let wb = crate::services::whiteboard::get_whiteboard(conn, id)?;
+
+    // Calculate approximate layer count
+    let mut layer_count = 0;
+    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&wb.canvas_data) {
+        if let Some(arr) = val.get("layerIds").and_then(|l| l.as_array()) {
+            layer_count = arr.len();
+        }
+    }
+
+    let meta = json!({
+        "layer_count": layer_count,
+        "workspace_id": wb.workspace_id
+    }).to_string();
+
+    let payload = serde_json::to_string(&wb)?;
+    let bin_id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    conn.execute(
+        "INSERT INTO recycle_bin (id, item_type, item_id, title, parent_workspace_id, parent_board_id, parent_list_id, payload, meta, actor, deleted_at)
+         VALUES (?1, 'WHITEBOARD', ?2, ?3, ?4, NULL, NULL, ?5, ?6, ?7, ?8)",
+        params![bin_id, wb.id, wb.title, wb.workspace_id, payload, meta, actor, now],
+    )?;
+
+    conn.execute("DELETE FROM whiteboards WHERE id = ?1", params![id])?;
+
+    create_audit_log_with_user(
+        conn,
+        &wb.workspace_id,
+        "DELETE",
+        id,
+        "WHITEBOARD",
+        &wb.title,
+        actor,
+    )?;
+
+    Ok(())
+}
+
 pub fn soft_delete_board(conn: &Connection, id: &str, actor: &str) -> AppResult<()> {
     let b: Board = conn.query_row(
         "SELECT id, workspace_id, title, image_id, image_thumb_url, image_full_url, image_user_name, image_link_html, is_favorite, created_at, updated_at 
@@ -423,6 +464,26 @@ pub fn restore_item(conn: &Connection, id: &str) -> AppResult<()> {
                     )?;
                 }
             }
+        }
+    } else if item.item_type == "WHITEBOARD" {
+        let wb: crate::models::whiteboard::Whiteboard = serde_json::from_str(&item.payload)?;
+        let ws_exists: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM workspaces WHERE id = ?1",
+            params![&wb.workspace_id],
+            |r| r.get(0),
+        ).unwrap_or(0);
+
+        let target_ws_id = if ws_exists > 0 {
+            wb.workspace_id.clone()
+        } else {
+            conn.query_row("SELECT id FROM workspaces LIMIT 1", [], |r| r.get(0)).unwrap_or_else(|_| "".into())
+        };
+
+        if !target_ws_id.is_empty() {
+            conn.execute(
+                "INSERT OR REPLACE INTO whiteboards (id, workspace_id, title, canvas_data, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![wb.id, target_ws_id, wb.title, wb.canvas_data, wb.created_at, wb.updated_at],
+            )?;
         }
     } else if item.item_type == "BOARD" {
         let b_data: StoredBoardPayload = serde_json::from_str(&item.payload)?;

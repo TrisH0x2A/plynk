@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
-import { Plus, LayoutGrid, Activity, Settings, Database, Layers, Trash2, Moon, Sun, Github, Star } from "lucide-react";
+import { Plus, LayoutGrid, PenTool, Activity, Settings, Database, Layers, Trash2, Moon, Sun, Github, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { APP_LINKS, fetchGitHubStars } from "@/constants/links";
 import { tauriApi } from "@/lib/tauri";
@@ -54,6 +54,7 @@ export const Sidebar = ({
 
   const navItems = [
     { id: "boards", label: "BOARDS", icon: LayoutGrid },
+    { id: "whiteboards", label: "WHITEBOARDS", icon: PenTool },
     { id: "activity", label: "ACTIVITY", icon: Activity },
     { id: "settings", label: "WORKSPACE", icon: Layers },
     { id: "backup", label: "BACKUP", icon: Database },
