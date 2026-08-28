@@ -1,6 +1,6 @@
 import React, { ElementRef, useRef } from "react";
 import { toast } from "sonner";
-import { X, Plus } from "lucide-react";
+import { X, Plus, PenTool } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -38,13 +38,13 @@ export const WhiteboardFormPopover = ({
     const title = formData.get("title") as string;
 
     if (!title?.trim()) {
-      toast.error("Whiteboard title is required");
+      toast.error("Title is required");
       return;
     }
 
     try {
       const created = await tauriApi.createWhiteboard(workspaceId, title.trim());
-      toast.success(`Whiteboard "${created.title}" initialized!`);
+      toast.success(`Created "${created.title}"!`);
       closeRef.current?.click();
       queryClient.invalidateQueries({ queryKey: ["workspace-whiteboards", workspaceId] });
       onWhiteboardCreated?.(created.id);
@@ -64,11 +64,9 @@ export const WhiteboardFormPopover = ({
       >
         <div className="flex items-center justify-between pb-3 border-b border-[#E4E4E7] dark:border-[#27272A] mb-4">
           <span className="font-mono text-xs uppercase font-bold text-[#09090B] dark:text-white tracking-wider flex items-center gap-x-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            <span>
-              <span className="dark:hidden">Create Whiteboard</span>
-              <span className="hidden dark:inline">Create Blackboard</span>
-            </span>
+            <PenTool className="h-3.5 w-3.5" />
+            <span className="dark:hidden">Create Whiteboard</span>
+            <span className="hidden dark:inline">Create Blackboard</span>
           </span>
           <PopoverClose ref={closeRef} asChild>
             <button
