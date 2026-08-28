@@ -94,6 +94,9 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
   const [canvasState, setCanvasState] = useState<CanvasState>({ mode: CanvasMode.None });
   const [pencilDraft, setPencilDraft] = useState<number[][] | null>(null);
 
+  // Ref for the interactive canvas viewport container (needed for accurate coordinate mapping)
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Auto-save debounce state
   const [isSaving, setIsSaving] = useState(false);
   const isDirty = useRef(false);
@@ -224,7 +227,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       return;
     }
 
-    const point = pointerEventToCanvasPoint(e, camera, camera.zoom);
+    const point = pointerEventToCanvasPoint(e, camera, camera.zoom, containerRef.current);
 
     if (canvasState.mode === CanvasMode.Inserting) {
       insertLayer(canvasState.layerType, point);
@@ -248,7 +251,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
       return;
     }
 
-    const current = pointerEventToCanvasPoint(e, camera, camera.zoom);
+    const current = pointerEventToCanvasPoint(e, camera, camera.zoom, containerRef.current);
 
     if (canvasState.mode === CanvasMode.Pressing) {
       // Start selection net
@@ -706,6 +709,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
 
       {/* Interactive Canvas Viewport */}
       <div
+        ref={containerRef}
         className="w-full h-full cursor-crosshair overflow-hidden"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -728,7 +732,7 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
             const handleLayerPointerDown = (e: React.PointerEvent) => {
               if (canvasState.mode === CanvasMode.Inserting || canvasState.mode === CanvasMode.Pencil) return;
               e.stopPropagation();
-              const point = pointerEventToCanvasPoint(e, camera, camera.zoom);
+              const point = pointerEventToCanvasPoint(e, camera, camera.zoom, containerRef.current);
 
               if (e.shiftKey) {
                 setSelectedLayerIds((prev) =>

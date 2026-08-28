@@ -26,11 +26,21 @@ export function hexToRgb(hex: string): Color {
 export function pointerEventToCanvasPoint(
   e: React.PointerEvent,
   camera: Camera,
-  zoom: number = 1
+  zoom: number = 1,
+  containerEl?: HTMLElement | null
 ): Point {
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (containerEl) {
+    const rect = containerEl.getBoundingClientRect();
+    offsetX = rect.left;
+    offsetY = rect.top;
+  }
+
   return {
-    x: Math.round((e.clientX - camera.x) / zoom),
-    y: Math.round((e.clientY - camera.y) / zoom),
+    x: Math.round((e.clientX - offsetX - camera.x) / zoom),
+    y: Math.round((e.clientY - offsetY - camera.y) / zoom),
   };
 }
 
