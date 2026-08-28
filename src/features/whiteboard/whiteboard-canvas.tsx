@@ -195,12 +195,12 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
     } else {
       newLayer = {
         type: LayerType.Text,
-        x: point.x - 40,
-        y: point.y - 20,
-        width: 120,
-        height: 40,
+        x: point.x - 60,
+        y: point.y - 16,
+        width: 160,
+        height: 32,
         fill: lastColor,
-        value: "TEXT",
+        value: "",
       };
     }
 
@@ -834,20 +834,52 @@ export const WhiteboardCanvas = ({ whiteboard, onBack }: WhiteboardCanvasProps) 
                   onPointerDown={handleLayerPointerDown}
                   className="cursor-pointer"
                 >
-                  <foreignObject width={layer.width + 100} height={layer.height + 40}>
-                    <input
-                      value={layer.value || ""}
-                      onChange={(e) => {
+                  <foreignObject
+                    width={layer.width}
+                    height={layer.height}
+                    style={{ overflow: "visible" }}
+                  >
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onBlur={(e) => {
+                        const text = (e.target as HTMLDivElement).innerText || "";
                         const updated = {
                           ...layers,
-                          [layerId]: { ...layer, value: e.target.value },
+                          [layerId]: { ...layer, value: text },
                         };
                         setLayers(updated);
                         isDirty.current = true;
                       }}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      className="font-mono text-sm font-bold bg-transparent outline-none border-none uppercase tracking-wider"
-                      style={{ color: colorToCss(layer.fill) }}
+                      onInput={(e) => {
+                        const text = (e.target as HTMLDivElement).innerText || "";
+                        const updated = {
+                          ...layers,
+                          [layerId]: { ...layer, value: text },
+                        };
+                        setLayers(updated);
+                        isDirty.current = true;
+                      }}
+                      style={{
+                        color: colorToCss(layer.fill),
+                        background: "transparent",
+                        outline: "none",
+                        border: "none",
+                        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase" as const,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        minWidth: `${layer.width}px`,
+                        minHeight: `${layer.height}px`,
+                        padding: "4px 2px",
+                        lineHeight: "1.4",
+                        caretColor: colorToCss(layer.fill),
+                      }}
+                      dangerouslySetInnerHTML={{ __html: layer.value || "" }}
                     />
                   </foreignObject>
                 </g>
