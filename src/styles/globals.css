@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
+
+  body {
+    background-color: #000000;
+    color: #ffffff;
+    font-family: 'Geist', sans-serif;
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+.border-highlight {
+  border-color: #27272A;
+}
+
+.border-highlight:hover {
+  border-color: #A1A1AA;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52525B;
+}
+
+
+
+
+
+
+
+.icon-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   MONOCHROME LIGHT THEME (EXACT INVERSE OF MONOCHROME BLACK TECH-NOIR)
+   ========================================================================== */
+
+html.light body {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+
+/* Surfaces & Containers */
+html.light .bg-black {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-\[\#131315\] {
+  background-color: #f4f4f5 !important;
+}
+
+html.light .bg-\[\#09090B\],
+html.light .bg-\[\#09090b\] {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-\[\#000000\] {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-\[\#18181B\],
+html.light .bg-\[\#18181b\] {
+  background-color: #f4f4f5 !important;
+}
+
+html.light .bg-\[\#201f22\] {
+  background-color: #e4e4e7 !important;
+}
+
+html.light .bg-\[\#353437\] {
+  background-color: #e4e4e7 !important;
+}
+
+html.light .bg-\[\#2a2a2c\] {
+  background-color: #e4e4e7 !important;
+}
+
+/* Borders */
+html.light .border-\[\#27272A\],
+html.light .border-\[\#27272a\] {
+  border-color: #e4e4e7 !important;
+}
+
+html.light .border-\[\#18181B\],
+html.light .border-\[\#18181b\] {
+  border-color: #f4f4f5 !important;
+}
+
+html.light .border-highlight {
+  border-color: #e4e4e7 !important;
+}
+
+html.light .border-highlight:hover,
+html.light .hover\:border-\[\#A1A1AA\]:hover,
+html.light .group:hover .group-hover\:border-\[\#A1A1AA\] {
+  border-color: #18181b !important;
+}
+
+html.light .hover\:border-white:hover {
+  border-color: #000000 !important;
+}
+
+/* Typography */
+html.light .text-white {
+  color: #09090b !important;
+}
+
+html.light .text-\[\#656467\] {
+  color: #71717a !important;
+}
+
+html.light .text-\[\#c4c7c8\] {
+  color: #52525b !important;
+}
+
+html.light .hover\:text-white:hover {
+  color: #000000 !important;
+}
+
+html.light .group:hover .group-hover\:text-white {
+  color: #000000 !important;
+}
+
+/* Card Accent Indicators */
+html.light .bg-\[\#27272A\] {
+  background-color: #e4e4e7 !important;
+}
+
+html.light .group:hover .group-hover\:bg-white {
+  background-color: #000000 !important;
+}
+
+/* Primary Action Buttons (Inverted: Black button with white text in light mode) */
+html.light .bg-white.text-black {
+  background-color: #09090b !important;
+  color: #ffffff !important;
+}
+
+html.light .bg-white.text-black:hover {
+  background-color: #27272a !important;
+  color: #ffffff !important;
+}
+
+/* Active navigation border */
+html.light .border-l-2.border-white {
+  border-color: #000000 !important;
+}
+
+html.light .border-white {
+  border-color: #000000 !important;
+}
+
+/* Status dots */
+html.light .w-2.h-2.rounded-full.bg-white {
+  background-color: #09090b !important;
+}
+
+/* Inputs and textareas */
+html.light input,
+html.light textarea {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+html.light input:focus,
+html.light textarea:focus {
+  border-color: #09090b !important;
+}
+
+/* Dialog and Popover containers */
+html.light [role="dialog"] {
+  background-color: #ffffff !important;
+  border-color: #e4e4e7 !important;
+  color: #09090b !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+}
+
+html.light .bg-black\/80 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Status Card Tints */
+html.light .bg-emerald-950\/10,
+html.light .bg-emerald-950\/20 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+html.light .bg-amber-950\/10,
+html.light .bg-amber-950\/20 {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
+
+html.light .bg-cyan-950\/10,
+html.light .bg-cyan-950\/20 {
+  background-color: rgba(6, 182, 212, 0.08) !important;
+}
+
+html.light .bg-rose-950\/20 {
+  background-color: rgba(244, 63, 94, 0.08) !important;
+}
+
+/* Scrollbars in Light Mode */
+html.light ::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+
+
+/* DialogPrimitive close button fix */
+html.light [data-radix-dialog-close],
+html.light button[aria-label="Close"],
+html.light .dialog-close-btn {
+  background-color: transparent !important;
+  color: #71717a !important;
+  border-color: #e4e4e7 !important;
+}
+
+html.light [data-radix-dialog-close]:hover,
+html.light button[aria-label="Close"]:hover,
+html.light .dialog-close-btn:hover {
+  background-color: #f4f4f5 !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* Ensure wallpaper labels and media badges preserve white text */
+.always-white,
+[data-theme-name] {
+  color: #ffffff !important;
+}
