@@ -152,58 +152,49 @@ export const Sidebar = ({
 
       {/* Footer Section: Theme Toggler & User Profile */}
       <div className="px-6 mt-auto border-t border-[#E4E4E7] dark:border-[#27272A] pt-4 space-y-3">
-        {/* Monochrome Theme Toggler */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono text-[#71717A] dark:text-[#656467] uppercase tracking-wider font-semibold">
-              APPEARANCE
-            </span>
-          </div>
-
-          <div className="flex items-center p-0.5 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A]">
-            <button
-              type="button"
-              onClick={() => onToggleTheme?.("dark")}
-              className={`flex-1 flex items-center justify-center gap-x-1.5 py-1.5 font-mono text-[10px] uppercase font-bold tracking-wider transition-all duration-150 ${
-                theme === "dark"
-                  ? "bg-white text-black shadow-sm"
-                  : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white"
-              }`}
-            >
+        {/* Single Combined Row: [Theme Switcher] | [Github Icon | Counter | Star Icon] */}
+        <div className="flex items-center gap-x-2 w-full">
+          {/* Animated Smooth Theme Switcher */}
+          <button
+            type="button"
+            onClick={() => onToggleTheme?.(theme === "dark" ? "light" : "dark")}
+            className="relative w-16 h-8 bg-[#F4F4F5] dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] p-0.5 flex items-center cursor-pointer select-none shrink-0 group rounded-none"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {/* Background Track Icons */}
+            <div className="w-full flex items-center justify-between px-1.5 text-[#71717A] dark:text-[#656467]">
               <Moon className="h-3 w-3" />
-              <span>DARK</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onToggleTheme?.("light")}
-              className={`flex-1 flex items-center justify-center gap-x-1.5 py-1.5 font-mono text-[10px] uppercase font-bold tracking-wider transition-all duration-150 ${
-                theme === "light"
-                  ? "bg-black text-white shadow-sm"
-                  : "text-[#71717A] dark:text-[#656467] hover:text-black dark:hover:text-white"
+              <Sun className="h-3 w-3" />
+            </div>
+
+            {/* Sliding Smooth Thumb */}
+            <div
+              className={`absolute top-0.5 bottom-0.5 w-[28px] bg-black text-white dark:bg-white dark:text-black shadow-sm transition-transform duration-300 ease-out flex items-center justify-center rounded-none ${
+                theme === "light" ? "translate-x-[30px]" : "translate-x-0"
               }`}
             >
-              <Sun className="h-3 w-3" />
-              <span>LIGHT</span>
-            </button>
-          </div>
-        </div>
+              {theme === "dark" ? (
+                <Moon className="h-3.5 w-3.5 fill-current" />
+              ) : (
+                <Sun className="h-3.5 w-3.5 fill-current" />
+              )}
+            </div>
+          </button>
 
-        {/* GitHub Star & Support Button */}
-        <button
-          type="button"
-          onClick={handleOpenGithub}
-          className="w-full flex items-center justify-between py-2 px-3 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-[#A1A1AA] transition-colors rounded-none cursor-pointer group select-none"
-        >
-          <div className="flex items-center gap-x-2 text-zinc-600 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white transition-colors">
-            <Github className="h-3.5 w-3.5" />
-            <span className="font-mono text-[10px] uppercase font-bold tracking-wider">GitHub</span>
-          </div>
-          <div className="flex items-center gap-x-1 font-mono text-[10px] text-zinc-700 dark:text-zinc-300">
-            <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-            <span className="font-bold">Star</span>
-            <span className="text-zinc-500 font-normal">({starCount})</span>
-          </div>
-        </button>
+          {/* GitHub Star & Support Button: [github icon | counter | star icon] */}
+          <button
+            type="button"
+            onClick={handleOpenGithub}
+            className="flex-1 h-8 flex items-center justify-between px-2.5 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#18181B] transition-all rounded-none cursor-pointer group select-none"
+            title="Support Plynk on GitHub"
+          >
+            <Github className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+            <span className="font-mono text-xs font-bold text-[#09090B] dark:text-white">
+              {starCount}
+            </span>
+            <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500 group-hover:scale-110 transition-transform shrink-0" />
+          </button>
+        </div>
 
         {/* User Card */}
         <div className="flex items-center gap-x-3 p-2 bg-white dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] hover:border-black dark:hover:border-[#A1A1AA] transition-colors rounded-none cursor-pointer">
