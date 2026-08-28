@@ -40,6 +40,7 @@ export const AppSettingsView = ({
   };
 
   const shortcuts = [
+    { key: "CTRL + T", desc: "Toggle between Dark and Light mode" },
     { key: "ESC", desc: "Close dialogs or cancel active input" },
     { key: "ENTER", desc: "Submit new card or column" },
     { key: "CLICK + DRAG", desc: "Reorder lists and cards seamlessly" },

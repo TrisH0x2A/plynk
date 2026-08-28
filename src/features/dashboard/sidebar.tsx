@@ -159,7 +159,7 @@ export const Sidebar = ({
             type="button"
             onClick={() => onToggleTheme?.(theme === "dark" ? "light" : "dark")}
             className="relative w-14 h-8 bg-[#F4F4F5] dark:bg-[#09090B] border border-[#E4E4E7] dark:border-[#27272A] p-0.5 flex items-center cursor-pointer select-none shrink-0 group rounded-none"
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode (Ctrl+T)`}
           >
             {/* Background Track Icons */}
             <div className="w-full flex items-center justify-between px-1 text-[#71717A] dark:text-[#656467]">
