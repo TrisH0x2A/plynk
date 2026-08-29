@@ -53,6 +53,65 @@ Plynk is engineered around a high-contrast industrial monochrome design language
 
 ---
 
+## Download & Installation
+
+Pre-compiled standalone binaries are available on the [Releases Page](https://github.com/TrisH0x2A/plynk/releases).
+
+### Windows
+1. Download the latest `.msi` or `.exe` installer.
+2. Run the setup installer and launch Plynk from your Start Menu or Desktop.
+
+### Linux (Debian / Ubuntu)
+1. Download the latest `.deb` package.
+2. Install via terminal:
+   ```bash
+   sudo dpkg -i plynk_*_amd64.deb
+   ```
+
+### Linux (AppImage)
+1. Download the `.AppImage` file.
+2. Make it executable and run:
+   ```bash
+   chmod +x Plynk_*.AppImage
+   ./Plynk_*.AppImage
+   ```
+
+---
+
+## Build from Source
+
+### Prerequisites
+
+- **Node.js**: v18 or later
+- **pnpm**: `npm install -g pnpm`
+- **Rust**: Latest stable toolchain (`rustup default stable`)
+
+### Steps
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/TrisH0x2A/plynk.git
+   cd plynk
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+3. **Run in development mode**:
+   ```bash
+   pnpm tauri:dev
+   ```
+
+4. **Build production binaries**:
+   ```bash
+   pnpm tauri:build
+   ```
+   Compiled output binaries are saved to `src-tauri/target/release/bundle/`.
+
+---
+
 ## Tech Stack
 
 | Layer | Technologies |
@@ -63,40 +122,6 @@ Plynk is engineered around a high-contrast industrial monochrome design language
 | **State & Cache** | [TanStack React Query v5](https://tanstack.com/query/latest), [Zustand](https://zustand-demo.pmnd.rs/) |
 | **Styling** | [TailwindCSS](https://tailwindcss.com/), Radix UI Primitives, Lucide Icons |
 | **Package Manager** | [pnpm](https://pnpm.io/) |
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18 or later)
-- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
-- [Rust](https://www.rust-lang.org/tools/install) (stable toolchain)
-
-### Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/TrisH0x2A/plynk.git
-   cd plynk
-   ```
-
-2. **Install frontend dependencies**:
-   ```bash
-   pnpm install
-   ```
-
-3. **Start the application in development**:
-   ```bash
-   pnpm tauri:dev
-   ```
-
-4. **Build production binaries**:
-   ```bash
-   pnpm tauri:build
-   ```
-   Compiled binaries and installers are output to `src-tauri/target/release/bundle/`.
 
 ---
 
