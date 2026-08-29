@@ -1,7 +1,7 @@
 # PLYNK
 
 <p align="center">
-  <strong>High-Performance, 100% Offline Brutalist Kanban Desktop Workspace</strong>
+  <strong>High-Performance, 100% Offline Brutalist Kanban & Whiteboard Desktop Workspace</strong>
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ## Overview
 
-Plynk is an ultra-fast, local-first Kanban desktop application built from the ground up for developers and power users who value speed, privacy, and minimalist brutalist aesthetics.
+Plynk is an ultra-fast, local-first Kanban and whiteboard desktop application built from the ground up for developers and power users who value speed, privacy, and minimalist brutalist aesthetics.
 
 Unlike cloud-dependent task management software, Plynk executes completely locally on your system, persists all state in an embedded SQLite database (`plynk.db`), and requires zero network access, zero account creation, and zero external telemetry.
 
@@ -26,21 +26,24 @@ Unlike cloud-dependent task management software, Plynk executes completely local
 
 Plynk is engineered around a high-contrast industrial monochrome design language:
 
-- **Dark Mode**: Deep charcoal and obsidian canvas (`#000000` / `#09090B`), sharp zinc borders, and stark white typography.
-- **Light Mode**: Inverted paper-white canvas (`#FFFFFF` / `#F4F4F5`), solid dark ink borders, and deep high-contrast status accents.
-- **Micro-Interactions**: Hardware-accelerated transitions, fluid drag-and-drop feedback, and streamlined onboarding.
+- **Dark Mode**: Deep charcoal and obsidian canvas (`#000000` / `#09090B`), sharp zinc borders, stark white typography, and blackboards.
+- **Light Mode**: Inverted paper-white canvas (`#FFFFFF` / `#F4F4F5`), solid dark ink borders, deep high-contrast status accents, and whiteboards.
+- **Micro-Interactions**: Hardware-accelerated transitions, fluid drag-and-drop feedback, and streamlined keyboard shortcuts.
 
 ---
 
 ## Core Features
 
 - **Workspace Architecture**: Organize projects across multiple discrete workspaces with isolated boards, lists, and activity streams.
-- **Fluid Drag & Drop**: Instant list and card reordering powered by `@hello-pangea/dnd` with jitter-free layout shifts.
-- **Status & Label System**: Rich card lifecycle management (**ACTIVE**, **IN PROGRESS**, **COMPLETED**, **POSTPONED**) with color-coded classification tags.
+- **Fluid Drag & Drop**: Instant list and card reordering powered by `@hello-pangea/dnd` with edge auto-scrolling.
+- **Status & Label System**: Rich card lifecycle management (**ACTIVE**, **IN PROGRESS**, **COMPLETED**, **POSTPONED**) with classification tags.
+- **Vector Whiteboard Canvas**: Infinite 2D whiteboard and blackboard with pressure-sensitive drawing, geometric shapes, sticky notes, text labels, and color controls.
+- **Recycle Bin & Recovery**: Soft delete and restore system for workspaces, boards, whiteboards, lists, and cards.
 - **System Activity Timeline**: Detailed chronological audit logging tracking structural events, renames, status transitions, and administrative actions.
-- **Local Backup & Restore**: One-click binary SQLite snapshot export and restore to any folder on your machine.
+- **Local Backup & Restore**: One-click binary SQLite database snapshot export and restore to any folder on your disk.
+- **Middle-Click Pan Navigation**: Seamless mouse navigation across boards and canvas views.
 - **Persistent Theme Switcher**: Instant switching between pure Monochrome Dark and Monochrome Light themes.
-- **Zero Telemetry & 100% Privacy**: All cards, boards, and logs remain strictly on your local disk.
+- **Zero Telemetry & 100% Privacy**: All cards, boards, whiteboards, and logs remain strictly on your local disk.
 
 ---
 
@@ -94,5 +97,3 @@ Plynk is engineered around a high-contrast industrial monochrome design language
 ## License
 
 Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for details.
-
----
