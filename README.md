@@ -1,4 +1,6 @@
-# PLYNK
+<p align="center">
+  <img src="./assests/logo-with-text.png" alt="Plynk" width="260" />
+</p>
 
 <p align="center">
   <strong>High-Performance, 100% Offline Brutalist Kanban & Whiteboard Desktop Workspace</strong>
@@ -10,6 +12,10 @@
   <img src="https://img.shields.io/badge/Storage-Embedded%20SQLite%20%28Zero%20Cloud%29-black?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
   <img src="https://img.shields.io/badge/License-MIT-black?style=for-the-badge" alt="License" />
   <a href="https://github.com/TrisH0x2A/plynk"><img src="https://img.shields.io/github/stars/TrisH0x2A/plynk?style=for-the-badge&color=black&logo=github" alt="GitHub Stars" /></a>
+</p>
+
+<p align="center">
+  <img src="./assests/banner.gif" alt="Plynk Workspace Demo" width="100%" />
 </p>
 
 ---
