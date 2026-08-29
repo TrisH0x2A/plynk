@@ -1,6 +1,6 @@
 # Contributing to Plynk
 
-First off, thank you for considering contributing to **Plynk**! 🎉
+First off, thank you for considering contributing to **Plynk**! 
 
 ## Development Setup
 

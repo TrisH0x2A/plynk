@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows'
+            os: windows-latest
+          - platform: 'linux'
+            os: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri Application & Publish Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Plynk ${{ github.ref_name }}'
+          releaseBody: |
+            **Plynk ${{ github.ref_name }} is now available.**
+
+            High-performance, 100% offline brutalist Kanban and vector whiteboard desktop workspace.
+
+            ### What's New
+            - Offline Brutalist Kanban: Multi-workspace boards, lists, and drag-and-drop cards.
+            - Vector Whiteboard / Blackboard: Freehand pencil, shapes, sticky notes, and text labels.
+            - Recycle Bin & Recovery: Soft delete and restore system for boards, cards, and canvases.
+            - Local SQLite Engine: Zero cloud, zero telemetry, instant local auto-save.
+            - Monochrome Themes: High-contrast dark and light modes with adaptive board labeling.
+
+            ### Downloads & Installation
+            - Windows: Download the .msi or .exe installer below and run setup.
+            - Linux (Debian/Ubuntu): Download the .deb package and install via `sudo dpkg -i <file>.deb`.
+            - Linux (AppImage): Download the .AppImage file, make it executable (`chmod +x`), and run directly.
+
+            ---
+            Full changelog available in [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md).
+          releaseDraft: false
+          prerelease: false
