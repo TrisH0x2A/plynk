@@ -7,13 +7,15 @@ use crate::state::AppState;
 #[tauri::command]
 pub fn export_database(state: State<'_, AppState>, target_path: String) -> AppResult<()> {
     let target = PathBuf::from(target_path);
-    backup_service::export_database_backup(&state.db_path, &target)
+    let conn = state.db.lock().unwrap();
+    backup_service::export_database_backup(&conn, &target)
 }
 
 #[tauri::command]
 pub fn restore_database(state: State<'_, AppState>, source_path: String) -> AppResult<()> {
     let source = PathBuf::from(source_path);
-    backup_service::restore_database_backup(&state.db_path, &source)
+    let mut conn = state.db.lock().unwrap();
+    backup_service::restore_database_backup(&mut conn, &state.db_path, &source)
 }
 
 #[tauri::command]
