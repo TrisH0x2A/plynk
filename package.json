@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@dotlottie/react-player": "^1.6.19",
-    "@hello-pangea/dnd": "^16.5.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.4",
